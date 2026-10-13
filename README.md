@@ -123,3 +123,7 @@ Ausführlich: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 2. Signierung auf dem Release-Runner (Zertifikat in HSM/Key Vault): EXE/DLL → MSI.
 3. `signtool verify /pa` und SHA-256 veröffentlichen.
 4. Release Notes inkl. aktualisiertem SBOM.
+
+## Lizenz
+
+MIT License – Copyright (c) 2026 Dennis Karahusic. Siehe [LICENSE](LICENSE).

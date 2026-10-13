@@ -31,8 +31,8 @@
     <Deterministic>true</Deterministic>
 
     <Version>1.1.0</Version>
-    <Company>ULTIMATE X</Company>
+    <Company>Dennis Karahusic</Company>
     <Product>ULTIMATE X Windows Control</Product>
-    <Copyright>© 2026 ULTIMATE X</Copyright>
+    <Copyright>© 2026 Dennis Karahusic</Copyright>
   </PropertyGroup>
 </Project>
