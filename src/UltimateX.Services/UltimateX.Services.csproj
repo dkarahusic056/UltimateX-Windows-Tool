@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Services: kapseln ALLE Systemzugriffe (WMI, Registry, Win32, Netzwerk).
+    Die UI ruft niemals direkt Systemfunktionen auf (§98).
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>UltimateX.Services</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Management" />
+    <PackageReference Include="System.Diagnostics.EventLog" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" />
+    <PackageReference Include="Microsoft.Data.Sqlite.Core" />
+    <PackageReference Include="SQLitePCLRaw.bundle_winsqlite3" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="UltimateX.Core.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UltimateX.Core\UltimateX.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Core: plattformnahe, UI-freie Bausteine.
+    Enthält alle sicherheitsrelevanten Grundfunktionen (Allowlist, Pfadschutz,
+    Signaturprüfung, Logging, Settings), damit sie zentral getestet werden können.
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>UltimateX.Core</RootNamespace>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Englisches Wörterbuch (§84), siehe Localization/Loc.cs -->
+    <EmbeddedResource Include="Localization\en.json" LogicalName="UltimateX.Core.Localization.en.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="UltimateX.Core.Tests" />
+  </ItemGroup>
+</Project>

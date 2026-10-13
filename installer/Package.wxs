@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ULTIMATE X Windows Control – MSI (WiX Toolset v5)
+  §3: Installationspfad wählbar, Standard C:\Program Files\ULTIMATE X Windows Control\,
+      Startmenü-Verknüpfung, optionale Desktop-Verknüpfung, Upgrade älterer Versionen,
+      saubere Deinstallation.
+  UpgradeCode NIE ändern – sonst funktionieren Upgrades nicht mehr.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="ULTIMATE X Windows Control"
+           Manufacturer="ULTIMATE X"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="6F2B9C41-7D3E-4A8B-9E21-5C4D8A7B3F10"
+           Scope="perMachine"
+           Compressed="yes"
+           Language="1031">
+
+    <SummaryInformation Description="ULTIMATE X Windows Control – Your Complete Windows Control Center" Manufacturer="ULTIMATE X" />
+
+    <MajorUpgrade DowngradeErrorMessage="Eine neuere Version von [ProductName] ist bereits installiert." AllowSameVersionUpgrades="no" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="..\src\UltimateX.App\Assets\ultimatex.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+
+    <!-- Nur 64-Bit Windows 10 (Build 17763+) und Windows 11 -->
+    <Launch Condition="VersionNT64" Message="ULTIMATE X erfordert ein 64-Bit-Windows." />
+    <Launch Condition="Installed OR WINDOWSBUILD &gt;= 17763" Message="ULTIMATE X erfordert Windows 10 Version 1809 oder neuer bzw. Windows 11." />
+    <Property Id="WINDOWSBUILD" Secure="yes">
+      <RegistrySearch Id="WinBuildSearch" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber" Type="raw" />
+    </Property>
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="ULTIMATE X Windows Control" />
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="UltimateXMenuFolder" Name="ULTIMATE X" />
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="ProgramDataUltimateX" Name="UltimateX">
+        <Directory Id="HelperRunsFolder" Name="HelperRuns" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Feature-Auswahl im Setup-Assistenten (WixUI_FeatureTree): Pfad wählbar, Desktop-Verknüpfung optional -->
+    <Feature Id="Main" Title="ULTIMATE X Windows Control" Description="Anwendung und Startmenü-Verknüpfung." Level="1" AllowAbsent="no" ConfigurableDirectory="INSTALLFOLDER">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="HelperRunsDir" />
+      <ComponentRef Id="HelperRunsCleanup" />
+      <Feature Id="DesktopShortcutFeature" Title="Desktop-Verknüpfung" Description="Verknüpfung auf dem Desktop erstellen." Level="1">
+        <ComponentRef Id="DesktopShortcut" />
+      </Feature>
+    </Feature>
+
+    <!-- Alle veröffentlichten Dateien (dotnet publish, self-contained) -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.PublishDir)**" />
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcut" Directory="UltimateXMenuFolder" Guid="B9D0C3A2-6E1F-4D7A-8C35-2F9E4B1A7C60">
+      <Shortcut Id="StartMenuApp" Name="ULTIMATE X Windows Control" Description="Your Complete Windows Control Center"
+                Target="[INSTALLFOLDER]UltimateX.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon">
+        <!-- Gleiche AppUserModelID wie NotificationService.AppUserModelId – Voraussetzung für Windows-Toasts (§83). -->
+        <ShortcutProperty Key="System.AppUserModel.ID" Value="UltimateX.WindowsControl" />
+      </Shortcut>
+      <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="0E6A4F1C-93B2-4C8D-A5E7-1D2F3B4C5A69">
+      <Shortcut Id="DesktopApp" Name="ULTIMATE X" Target="[INSTALLFOLDER]UltimateX.exe" WorkingDirectory="INSTALLFOLDER" Icon="AppIcon" />
+      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!--
+      Ausgabeordner des Admin-Helpers: wird vom Installer (als Administrator) angelegt und gehört damit
+      Administratoren. Prozesse im Benutzerkontext können ihn nicht durch einen Junction/Symlink ersetzen
+      (THREAT_MODEL T-07). Wird bei der Deinstallation entfernt.
+    -->
+    <Component Id="HelperRunsDir" Directory="HelperRunsFolder" Guid="5A7C9E1B-2D4F-4B6A-8C0E-3F5A7B9D1C24">
+      <CreateFolder />
+      <RemoveFolder Id="RemoveHelperRuns" On="uninstall" />
+      <RemoveFolder Id="RemoveProgramDataUltimateX" Directory="ProgramDataUltimateX" On="uninstall" />
+      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="HelperRuns" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Laufende Ausgabedateien des Helpers bei Deinstallation entfernen -->
+    <Component Id="HelperRunsCleanup" Directory="HelperRunsFolder" Guid="7C1E3A5B-9D2F-4E6A-B8C0-4A6C8E0B2D35">
+      <RemoveFile Id="RemoveHelperLogs" Name="*.log" On="uninstall" />
+      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="HelperRunsCleanup" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+  </Package>
+</Wix>

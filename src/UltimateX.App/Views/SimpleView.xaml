@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <!-- Simple Mode (§9): große Kacheln, kurze Texte -->
+    <DataTemplate DataType="{x:Type vm:SimpleViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,0,24" HorizontalAlignment="Center" MaxWidth="1000">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <WrapPanel HorizontalAlignment="Center">
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding CheckPcCommand}">
+                        <StackPanel><TextBlock Text="&#xE9D9;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="PC überprüfen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding TestInternetCommand}">
+                        <StackPanel><TextBlock Text="&#xEC4A;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Internet testen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding SearchUpdatesCommand}">
+                        <StackPanel><TextBlock Text="&#xE895;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Updates suchen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding CleanStorageCommand}">
+                        <StackPanel><TextBlock Text="&#xE74D;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Speicher bereinigen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding OrganizeDesktopCommand}">
+                        <StackPanel><TextBlock Text="&#xE8A9;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Desktop aufräumen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding ManageStartupCommand}">
+                        <StackPanel><TextBlock Text="&#xE7E8;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Startup verwalten" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding CheckWindowsCommand}">
+                        <StackPanel><TextBlock Text="&#xE90F;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Windows prüfen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding RestartCommand}">
+                        <StackPanel><TextBlock Text="&#xE777;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Neustart" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.BigTile}" Command="{Binding SleepCommand}">
+                        <StackPanel><TextBlock Text="&#xE708;" Style="{StaticResource Text.Icon}" FontSize="30" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,0,10" /><TextBlock Text="Energiesparen" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" /></StackPanel>
+                    </Button>
+                </WrapPanel>
+                <Button Style="{StaticResource Button.Link}" Content="Zur erweiterten Ansicht wechseln" Command="{Binding AdvancedViewCommand}" HorizontalAlignment="Center" Margin="0,12,0,0" />
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

@@ -1,0 +1,429 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels"
+                    xmlns:ctl="clr-namespace:UltimateX.App.Controls">
+
+    <!-- Kartenkopf-Pfeil (öffnet Detailseite) -->
+    <Style x:Key="CardHeaderButton" TargetType="Button" BasedOn="{StaticResource Button.Link}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.AccentHot}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Icons}" />
+        <Setter Property="Content" Value="&#xE76C;" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="ToolTip" Value="Details öffnen" />
+    </Style>
+
+    <!-- Zentrale Aktion im Hero-Bereich -->
+    <Style x:Key="DashAction" TargetType="Button" BasedOn="{StaticResource Button.Action}">
+        <Setter Property="Height" Value="62" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{DynamicResource Brush.SurfaceAlt}" />
+    </Style>
+
+    <!-- Kopfzeile einer Karte: rotes Symbol + Titel in Großbuchstaben -->
+    <DataTemplate x:Key="HudGaugeTemplate" DataType="{x:Type vm:DashboardCard}">
+        <ctl:ChamferBorder Style="{StaticResource Card}" Padding="14,12" AccentBrush="{Binding State, Converter={StaticResource StateBrush}}">
+            <StackPanel>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource CardHeaderButton}"
+                            Command="{Binding DataContext.OpenCardCommand, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" CommandParameter="{Binding}" />
+                    <TextBlock Text="{Binding Glyph}" Style="{StaticResource Text.Icon}" FontSize="14" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.CardHeader}" />
+                </DockPanel>
+                <Grid Width="118" Height="118" Margin="0,10,0,8">
+                    <ctl:Ring Value="{Binding Percent}" Thickness="7" TrackBrush="{DynamicResource Brush.Grid}"
+                              RingBrush="{Binding State, Converter={StaticResource StateBrush}}" />
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Percent, StringFormat='{}{0:0}', TargetNullValue='–'}" Style="{StaticResource Text.Display}"
+                                   FontSize="30" HorizontalAlignment="Center" />
+                        <TextBlock Text="%" Style="{StaticResource Text.Muted}" FontSize="10" HorizontalAlignment="Center" Margin="0,-4,0,0" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Text="{Binding Value}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip="{Binding Value}" />
+                <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Muted}" FontSize="11" TextTrimming="CharacterEllipsis" ToolTip="{Binding Detail}" />
+            </StackPanel>
+        </ctl:ChamferBorder>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:DashboardViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Margin="0,0,12,12" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <!-- ===================== SYSTEM HEALTH + zentrale Aktionen ===================== -->
+                <ctl:ChamferBorder Background="{DynamicResource Brush.Hero}" BorderBrush="{DynamicResource Brush.CardBorder}" BorderThickness="1"
+                                   Chamfer="22" AccentBrush="{DynamicResource Brush.AccentHot}" AccentLength="80" Padding="24,20" Margin="0,0,12,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Health-Score-Ring -->
+                        <Grid Width="168" Height="168" Margin="0,0,26,0" VerticalAlignment="Center">
+                            <ctl:Ring Value="{Binding ScorePercent}" Thickness="10" TrackBrush="{DynamicResource Brush.Grid}"
+                                      RingBrush="{Binding HeroState, Converter={StaticResource StateBrush}}" />
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Score.Score, FallbackValue='–'}" Style="{StaticResource Text.Display}" FontSize="48" HorizontalAlignment="Center"
+                                           Foreground="{Binding HeroState, Converter={StaticResource StateBrush}}" />
+                                <TextBlock Text="HEALTH SCORE" Style="{StaticResource Text.Muted}" FontFamily="{StaticResource Font.DisplayCondensed}" FontSize="11" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="SYSTEM HEALTH" Style="{StaticResource Text.CardHeader}" Foreground="{DynamicResource Brush.AccentHot}" />
+                            <TextBlock FontFamily="{StaticResource Font.Display}" FontSize="36" FontWeight="Bold" Margin="0,2,0,0">
+                                <Run Text="PC STATUS: " /><Run Text="{Binding HeroStatus, Mode=OneWay}" Foreground="{Binding HeroState, Converter={StaticResource StateBrush}}" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding HeroText}" FontSize="14" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,2,0,14" TextWrapping="Wrap" />
+                            <WrapPanel>
+                                <StackPanel Margin="0,0,30,6">
+                                    <TextBlock Text="BETRIEBSSYSTEM" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                    <TextBlock Text="{Binding OsText}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding OsBuild}" Style="{StaticResource Text.Muted}" FontSize="11" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,30,6">
+                                    <TextBlock Text="BETRIEBSZEIT" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                    <TextBlock Text="{Binding UptimeText}" FontWeight="SemiBold" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,30,6">
+                                    <TextBlock Text="LETZTER CHECK" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                    <TextBlock Text="{Binding LastCheckText}" FontWeight="SemiBold" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,30,6">
+                                    <TextBlock Text="BEWERTUNG" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                    <TextBlock Text="{Binding Score.Rating, FallbackValue='–'}" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <!-- Zentrale Aktionen -->
+                        <UniformGrid Grid.Column="2" Columns="3" Width="560" VerticalAlignment="Center" Margin="20,0,0,0">
+                            <Button Style="{StaticResource DashAction}" Background="{DynamicResource Brush.PrimaryFill}" BorderBrush="{DynamicResource Brush.AccentHot}"
+                                    Foreground="{DynamicResource Brush.AccentText}" Command="{Binding CompleteCheckCommand}"
+                                    IsEnabled="{Binding IsCheckRunning, Converter={StaticResource InvBool}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE9D9;" Style="{StaticResource Text.Icon}" FontSize="20" Margin="0,0,10,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="RUN PC CHECK" />
+                                        <TextBlock Text="Kompletter Systemcheck" FontFamily="{StaticResource Font.Ui}" FontWeight="Normal" FontSize="10" Opacity="0.8" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource DashAction}" Command="{Binding TestComponentsCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE950;" Style="{StaticResource Text.Icon}" FontSize="20" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="TEST COMPONENTS" />
+                                        <TextBlock Text="40+ Komponenten prüfen" FontFamily="{StaticResource Font.Ui}" FontWeight="Normal" FontSize="10" Foreground="{DynamicResource Brush.TextMuted}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource DashAction}" Command="{Binding NetworkTestCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE968;" Style="{StaticResource Text.Icon}" FontSize="20" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="NETWORK TEST" />
+                                        <TextBlock Text="Ping · Geräte · Scanner" FontFamily="{StaticResource Font.Ui}" FontWeight="Normal" FontSize="10" Foreground="{DynamicResource Brush.TextMuted}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource DashAction}" Command="{Binding SecurityCheckCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xEA18;" Style="{StaticResource Text.Icon}" FontSize="20" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="SECURITY CHECK" />
+                                        <TextBlock Text="Nur lesend, keine Änderung" FontFamily="{StaticResource Font.Ui}" FontWeight="Normal" FontSize="10" Foreground="{DynamicResource Brush.TextMuted}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource DashAction}" Command="{Binding OpenReportCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE9F9;" Style="{StaticResource Text.Icon}" FontSize="20" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="EXPORT REPORT" />
+                                        <TextBlock Text="PDF · Drucken · Vorschau" FontFamily="{StaticResource Font.Ui}" FontWeight="Normal" FontSize="10" Foreground="{DynamicResource Brush.TextMuted}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource DashAction}" Command="{Binding GameModeCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE7FC;" Style="{StaticResource Text.Icon}" FontSize="20" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="GAME MODE" />
+                                        <TextBlock Text="Live-Leistung im Spiel" FontFamily="{StaticResource Font.Ui}" FontWeight="Normal" FontSize="10" Foreground="{DynamicResource Brush.TextMuted}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                        </UniformGrid>
+                    </Grid>
+                </ctl:ChamferBorder>
+
+                <!-- ===================== Hardware-Ringe: CPU · GPU · RAM · VRAM · STORAGE · NETWORK ===================== -->
+                <UniformGrid Columns="6" Margin="0,0,0,0">
+                    <ContentControl Content="{Binding CpuCard}" ContentTemplate="{StaticResource HudGaugeTemplate}" Focusable="False" />
+                    <ContentControl Content="{Binding GpuCard}" ContentTemplate="{StaticResource HudGaugeTemplate}" Focusable="False" />
+                    <ContentControl Content="{Binding RamCard}" ContentTemplate="{StaticResource HudGaugeTemplate}" Focusable="False" />
+                    <ContentControl Content="{Binding VramCard}" ContentTemplate="{StaticResource HudGaugeTemplate}" Focusable="False" />
+                    <ContentControl Content="{Binding StorageCard}" ContentTemplate="{StaticResource HudGaugeTemplate}" Focusable="False" />
+                    <ContentControl Content="{Binding NetworkCard}" ContentTemplate="{StaticResource HudGaugeTemplate}" Focusable="False" />
+                </UniformGrid>
+
+                <!-- ===================== TEMPERATURES · LIVE PERFORMANCE ===================== -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1.9*" />
+                    </Grid.ColumnDefinitions>
+
+                    <ctl:ChamferBorder Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,12">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CardHeaderButton}" Command="{Binding OpenSensorsCommand}" />
+                                <TextBlock Text="&#xE9CA;" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                <TextBlock Text="TEMPERATURES" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding Temperatures}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,0,0,10" ToolTip="{Binding Source}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Source}" Style="{StaticResource Text.Muted}" FontSize="10" TextTrimming="CharacterEllipsis" />
+                                                <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="4" Margin="0,4,12,0"
+                                                             Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding ValueText}" Style="{StaticResource Text.Display}" FontSize="22" VerticalAlignment="Center"
+                                                       Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding SensorSourceText}" Style="{StaticResource Text.MutedWrap}" FontSize="11" />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <ctl:ChamferBorder Grid.Column="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Rectangle Width="14" Height="3" Fill="{DynamicResource Brush.Series1}" Margin="0,0,6,0" /><TextBlock Text="CPU" Style="{StaticResource Text.Muted}" Margin="0,0,14,0" />
+                                    <Rectangle Width="14" Height="3" Fill="{DynamicResource Brush.Series2}" Margin="0,0,6,0" /><TextBlock Text="GPU" Style="{StaticResource Text.Muted}" Margin="0,0,14,0" />
+                                    <Rectangle Width="14" Height="3" Fill="{DynamicResource Brush.Series3}" Margin="0,0,6,0" /><TextBlock Text="RAM" Style="{StaticResource Text.Muted}" />
+                                </StackPanel>
+                                <TextBlock Text="&#xE9D2;" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                <TextBlock Text="LIVE PERFORMANCE · 2 MIN" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <ctl:PerformanceChart Height="214" Series1="{Binding CpuHistory}" Series2="{Binding GpuHistory}" Series3="{Binding RamHistory}"
+                                                  Brush1="{DynamicResource Brush.Series1}" Brush2="{DynamicResource Brush.Series2}" Brush3="{DynamicResource Brush.Series3}"
+                                                  GridBrush="{DynamicResource Brush.Grid}" LabelBrush="{DynamicResource Brush.TextDim}" />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </Grid>
+
+                <!-- ===================== SECURITY · WINDOWS HEALTH · NETWORK · UPDATES ===================== -->
+                <UniformGrid Columns="4">
+                    <!-- SECURITY -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding SecurityCard.State, Converter={StaticResource StateBrush}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CardHeaderButton}" Command="{Binding OpenCardCommand}" CommandParameter="{Binding SecurityCard}" />
+                                <TextBlock Text="&#xEA18;" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                <TextBlock Text="SECURITY" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding SecurityCard.Value}" Style="{StaticResource Text.Display}" FontSize="22"
+                                       Foreground="{Binding SecurityCard.State, Converter={StaticResource StateBrush}}" />
+                            <TextBlock Text="{Binding SecurityCard.Detail}" Style="{StaticResource Text.Muted}" Margin="0,0,0,10" />
+                            <ItemsControl ItemsSource="{Binding SecurityHighlights}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,3">
+                                            <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Status}" Style="{StaticResource Text.Muted}" MaxWidth="120" Margin="8,0,0,0"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Status}" />
+                                            <TextBlock Text="{Binding Area}" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- WINDOWS HEALTH -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding WindowsCard.State, Converter={StaticResource StateBrush}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CardHeaderButton}" Command="{Binding OpenCardCommand}" CommandParameter="{Binding WindowsCard}" />
+                                <TextBlock Text="&#xE782;" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                <TextBlock Text="WINDOWS HEALTH" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding WindowsCard.Value}" Style="{StaticResource Text.Display}" FontSize="22"
+                                       Foreground="{Binding WindowsCard.State, Converter={StaticResource StateBrush}}" />
+                            <TextBlock Text="{Binding WindowsCard.Detail}" Style="{StaticResource Text.Muted}" Margin="0,0,0,10" TextTrimming="CharacterEllipsis" />
+                            <ItemsControl ItemsSource="{Binding HealthRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,3">
+                                            <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" Style="{StaticResource Text.Muted}" MaxWidth="130" Margin="8,0,0,0"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Value}" />
+                                            <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- NETWORK / INTERNET -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding InternetCard.State, Converter={StaticResource StateBrush}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CardHeaderButton}" Command="{Binding SpeedtestCommand}" />
+                                <TextBlock Text="&#xE701;" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                <TextBlock Text="NETWORK" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <UniformGrid Columns="2">
+                                <Grid Height="104">
+                                    <ctl:Gauge Value="{Binding LastDownMbps, TargetNullValue=0}" Maximum="1000" TrackBrush="{DynamicResource Brush.Grid}" ValueBrush="{DynamicResource Brush.AccentHot}" />
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                        <TextBlock Text="{Binding LastDownMbps, StringFormat='{}{0:0}', TargetNullValue='–'}" Style="{StaticResource Text.Display}" FontSize="20" HorizontalAlignment="Center" />
+                                        <TextBlock Text="↓ Mbit/s" Style="{StaticResource Text.Muted}" FontSize="10" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Height="104">
+                                    <ctl:Gauge Value="{Binding LastUpMbps, TargetNullValue=0}" Maximum="1000" TrackBrush="{DynamicResource Brush.Grid}" ValueBrush="{DynamicResource Brush.Series2}" />
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,0">
+                                        <TextBlock Text="{Binding LastUpMbps, StringFormat='{}{0:0}', TargetNullValue='–'}" Style="{StaticResource Text.Display}" FontSize="20" HorizontalAlignment="Center" />
+                                        <TextBlock Text="↑ Mbit/s" Style="{StaticResource Text.Muted}" FontSize="10" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </UniformGrid>
+                            <TextBlock Text="{Binding LastPingText}" Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" Margin="0,2,0,8" />
+                            <Button Style="{StaticResource Button.Primary}" Content="Speedtest starten" Command="{Binding SpeedtestCommand}" HorizontalAlignment="Stretch" Margin="0" />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- UPDATES -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource CardHeaderButton}" Command="{Binding OpenUpdatesCommand}" />
+                                <TextBlock Text="&#xE895;" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.AccentHot}" Margin="0,0,10,0" />
+                                <TextBlock Text="UPDATES" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding UpdateRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <ctl:ChamferBorder Style="{StaticResource Card.Inner}" Margin="0,0,0,8" AccentBrush="{Binding State, Converter={StaticResource StateBrush}}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Value}" Style="{StaticResource Text.Muted}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </ctl:ChamferBorder>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </UniformGrid>
+
+                <!-- ===================== Score-Details · Complete PC Check · Schnellzugriff ===================== -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="1.5*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <ctl:ChamferBorder Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="HEALTH SCORE · DETAILS" Style="{StaticResource Text.CardHeader}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Score.Factors}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock DockPanel.Dock="Left" Text="{Binding Deduction, StringFormat='−{0}'}" Width="34"
+                                                       Foreground="{DynamicResource Brush.Warning}" FontWeight="SemiBold" />
+                                            <TextBlock Style="{StaticResource Text.Wrap}">
+                                                <Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=": " /><Run Text="{Binding Reason, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ctl:Sparkline Height="44" Margin="0,10,0,4" Values="{Binding HealthHistory}" Maximum="100"
+                                           Stroke="{DynamicResource Brush.AccentHot}" Fill="{DynamicResource Brush.ChartFill}" />
+                            <TextBlock Text="{Binding HealthHistoryText}" Style="{StaticResource Text.Muted}" FontSize="11" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,10,0,0" FontSize="11"
+                                       Text="Start bei 100, jeder Abzug wird mit Grund angezeigt. Nicht messbare Werte fließen nicht ein. Orientierung, keine Garantie." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <ctl:ChamferBorder Grid.Column="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,10">
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding IncludeRepairScanInCheck}"
+                                          Content="inkl. SFC/DISM (Adminrechte)" IsEnabled="{Binding IsCheckRunning, Converter={StaticResource InvBool}}" />
+                                <TextBlock Text="COMPLETE PC CHECK" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <TextBlock Text="Noch kein Check in dieser Sitzung – „RUN PC CHECK“ startet alle Prüfungen (nur lesend)."
+                                       Style="{StaticResource Text.MutedWrap}" Visibility="{Binding CheckSteps.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                            <ItemsControl ItemsSource="{Binding CheckSteps}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="190" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Text.MutedWrap}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding CheckSummary}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" Margin="0,8,0,0"
+                                       Visibility="{Binding CheckSummary, Converter={StaticResource NullToVis}}" />
+                            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,8,0,0" Visibility="{Binding IsCheckRunning, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <ctl:ChamferBorder Grid.Column="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="SCHNELLZUGRIFF" Style="{StaticResource Text.CardHeader}" Margin="0,0,0,10" />
+                            <UniformGrid Columns="2">
+                                <Button Command="{Binding CheckWindowsCommand}" Margin="0,0,6,6" Content="Windows prüfen" />
+                                <Button Command="{Binding SystemCleanupCommand}" Margin="0,0,0,6" Content="Cleanup" />
+                                <Button Command="{Binding OrganizeDesktopCommand}" Margin="0,0,6,6" Content="Desktop ordnen" />
+                                <Button Command="{Binding EmptyRecycleBinCommand}" Margin="0,0,0,6" Content="Papierkorb leeren" />
+                                <Button Command="{Binding OpenCmdCommand}" Margin="0,0,6,6" Content="CMD" />
+                                <Button Command="{Binding OpenPowerShellCommand}" Margin="0,0,0,6" Content="PowerShell" />
+                                <Button Command="{Binding LockPcCommand}" Margin="0,0,6,6" Content="PC sperren" />
+                                <Button Command="{Binding RestartCommand}" Margin="0,0,0,6" Content="Neu starten" />
+                            </UniformGrid>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Content="Energiesparmodus" Command="{Binding SleepCommand}" Style="{StaticResource Button.Link}" Margin="0,0,14,0" />
+                                <Button Content="Herunterfahren" Command="{Binding ShutdownCommand}" Style="{StaticResource Button.Link}" />
+                            </StackPanel>
+                            <DockPanel Margin="0,12,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Link}" Content="Rohdaten (TXT/JSON) …" Command="{Binding ExportReportCommand}" />
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding IncludeSensitiveInReport}" Content="sensible Daten" />
+                            </DockPanel>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

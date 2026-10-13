@@ -1,0 +1,16 @@
+bin/
+obj/
+artifacts/
+publish/
+*.user
+*.suo
+.vs/
+*.pfx
+*.snk
+TestResults/
+bin/
+obj/
+.vs/
+artifacts-*/
+*.msi
+*.user

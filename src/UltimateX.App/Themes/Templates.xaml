@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:core="clr-namespace:UltimateX.Core.Common;assembly=UltimateX.Core"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels"
+                    xmlns:conv="clr-namespace:UltimateX.App.Converters">
+
+    <!-- Konverter (hier definiert, damit sie in allen Vorlagen per StaticResource verfügbar sind) -->
+    <conv:DataStateToBrushConverter x:Key="StateBrush" />
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    <conv:InverseBoolToVisibilityConverter x:Key="InvBoolToVis" />
+    <conv:NullToVisibilityConverter x:Key="NullToVis" />
+    <conv:InverseBoolConverter x:Key="InvBool" />
+
+    <!-- Ein Wert mit Statuspunkt: Grün/Orange/Rot/Grau -->
+    <DataTemplate x:Key="InfoItemTemplate" DataType="{x:Type core:InfoItem}">
+        <Grid Margin="0,3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Muted}" Margin="0,1,12,0" VerticalAlignment="Top" />
+            <DockPanel Grid.Column="1">
+                <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" VerticalAlignment="Top" Margin="0,4,8,0"
+                         Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                <TextBlock Text="{Binding Value}" Style="{StaticResource Text.Wrap}" />
+            </DockPanel>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Karte mit Titel und Werteliste -->
+    <DataTemplate x:Key="InfoSectionTemplate" DataType="{x:Type vm:InfoSection}">
+        <ctl:ChamferBorder Style="{StaticResource Card}" Width="440" VerticalAlignment="Top">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <TextBlock Text="{Binding Glyph}" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,10,0" />
+                    <TextBlock Text="{Binding Title}" Style="{StaticResource Text.H3}" FontSize="15" />
+                </StackPanel>
+                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource InfoItemTemplate}" />
+                <TextBlock Text="{Binding Note}" Style="{StaticResource Text.MutedWrap}" Margin="0,8,0,0"
+                           Visibility="{Binding Note, Converter={StaticResource NullToVis}}" />
+            </StackPanel>
+        </ctl:ChamferBorder>
+    </DataTemplate>
+
+    <!-- Kartenraster -->
+    <ItemsPanelTemplate x:Key="WrapPanelTemplate">
+        <WrapPanel Orientation="Horizontal" />
+    </ItemsPanelTemplate>
+
+    <!-- Seitenkopf-Hinweis (StatusMessage) -->
+    <Style x:Key="StatusBar" TargetType="ctl:ChamferBorder">
+        <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Chamfer" Value="8" />
+        <Setter Property="AccentBrush" Value="{DynamicResource Brush.AccentHot}" />
+        <Setter Property="AccentLength" Value="24" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="Margin" Value="0,0,12,12" />
+    </Style>
+</ResourceDictionary>

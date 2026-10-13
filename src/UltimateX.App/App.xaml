@@ -1,0 +1,33 @@
+<Application x:Class="UltimateX.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             ShutdownMode="OnMainWindowClose">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Index 0 = Farbschema; wird vom ThemeManager zur Laufzeit ausgetauscht. -->
+                <ResourceDictionary Source="Themes/Dark.xaml" />
+                <ResourceDictionary Source="Themes/Controls.xaml" />
+                <ResourceDictionary Source="Themes/Templates.xaml" />
+                <!-- Views: implizite DataTemplates ViewModel → Ansicht (MVVM, kein Code-Behind) -->
+                <ResourceDictionary Source="Views/DashboardView.xaml" />
+                <ResourceDictionary Source="Views/HardwareView.xaml" />
+                <ResourceDictionary Source="Views/MonitorView.xaml" />
+                <ResourceDictionary Source="Views/NetworkView.xaml" />
+                <ResourceDictionary Source="Views/SpeedtestView.xaml" />
+                <ResourceDictionary Source="Views/ListViews.xaml" />
+                <ResourceDictionary Source="Views/HealthView.xaml" />
+                <ResourceDictionary Source="Views/SecurityView.xaml" />
+                <ResourceDictionary Source="Views/ToolsView.xaml" />
+                <ResourceDictionary Source="Views/SettingsView.xaml" />
+                <ResourceDictionary Source="Views/SimpleView.xaml" />
+                <ResourceDictionary Source="Views/MaintenanceViews.xaml" />
+                <ResourceDictionary Source="Views/LayoutViews.xaml" />
+                <ResourceDictionary Source="Views/ExtraViews.xaml" />
+                <ResourceDictionary Source="Views/SensorSourcesView.xaml" />
+                <ResourceDictionary Source="Views/ComponentTestView.xaml" />
+                <ResourceDictionary Source="Views/ReportView.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Dark Theme "ULTIMATE X – Futuristic Gaming Control Center" (v1.1):
+      Schwarz/Graphit als Fläche, Rot als einziger Akzent. Statusfarben bewusst gedämpft,
+      damit "Problem" (Hellrot) und Akzent (Rot) über Symbol + Text unterscheidbar bleiben.
+    -->
+    <Color x:Key="Color.Accent">#D40000</Color>
+    <Color x:Key="Color.AccentHot">#FF2525</Color>
+    <Color x:Key="Color.AccentDeep">#8B0000</Color>
+    <Color x:Key="Color.Glow">#FF2525</Color>
+
+    <SolidColorBrush x:Key="Brush.Background" Color="#070707" />
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#0B0B0B" />
+    <SolidColorBrush x:Key="Brush.Surface" Color="#171717" />
+    <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#1D1D1D" />
+    <SolidColorBrush x:Key="Brush.SurfaceRaised" Color="#222222" />
+    <SolidColorBrush x:Key="Brush.SurfaceHover" Color="#2A1414" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#2C2C2C" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#F2F2F2" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#AFAFAF" />
+    <SolidColorBrush x:Key="Brush.TextDim" Color="#6E6E6E" />
+    <SolidColorBrush x:Key="Brush.Accent" Color="#D40000" />
+    <SolidColorBrush x:Key="Brush.AccentHot" Color="#FF2525" />
+    <SolidColorBrush x:Key="Brush.AccentDeep" Color="#8B0000" />
+    <SolidColorBrush x:Key="Brush.Accent2" Color="#FF2525" />
+    <SolidColorBrush x:Key="Brush.AccentText" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Brush.AccentSoft" Color="#26D40000" />
+    <SolidColorBrush x:Key="Brush.Ok" Color="#3DD68C" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="#F2A93B" />
+    <SolidColorBrush x:Key="Brush.Problem" Color="#FF2525" />
+    <SolidColorBrush x:Key="Brush.Na" Color="#5E5E5E" />
+    <SolidColorBrush x:Key="Brush.ChartFill" Color="#33D40000" />
+    <SolidColorBrush x:Key="Brush.Series1" Color="#FF2525" />
+    <SolidColorBrush x:Key="Brush.Series2" Color="#E6E6E6" />
+    <SolidColorBrush x:Key="Brush.Series3" Color="#8B0000" />
+    <SolidColorBrush x:Key="Brush.Grid" Color="#232323" />
+
+    <!-- Kartenkante: oben links ein Hauch Rot, sonst Graphit -->
+    <LinearGradientBrush x:Key="Brush.CardBorder" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#5A1A1A" Offset="0" />
+        <GradientStop Color="#2C2C2C" Offset="0.35" />
+        <GradientStop Color="#242424" Offset="1" />
+    </LinearGradientBrush>
+    <!-- Hero-Fläche: Schwarz mit tiefrotem Verlauf nach rechts -->
+    <LinearGradientBrush x:Key="Brush.Hero" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#141414" Offset="0" />
+        <GradientStop Color="#120A0A" Offset="0.6" />
+        <GradientStop Color="#3A0606" Offset="1" />
+    </LinearGradientBrush>
+    <!-- Aktiver Navigationseintrag: rot auslaufend -->
+    <LinearGradientBrush x:Key="Brush.NavSelected" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#55D40000" Offset="0" />
+        <GradientStop Color="#22D40000" Offset="0.6" />
+        <GradientStop Color="#00D40000" Offset="1" />
+    </LinearGradientBrush>
+    <!-- Primärbutton -->
+    <LinearGradientBrush x:Key="Brush.PrimaryFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#E00000" Offset="0" />
+        <GradientStop Color="#A30000" Offset="1" />
+    </LinearGradientBrush>
+</ResourceDictionary>

@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <DataTemplate DataType="{x:Type vm:ToolsViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <!-- Windows Power Control (§36) -->
+                <TextBlock Text="Power" Style="{StaticResource Text.H2}" />
+                <WrapPanel>
+                    <Button Style="{StaticResource Button.Tile}" Command="{Binding ShutdownCommand}">
+                        <StackPanel><TextBlock Text="Herunterfahren" FontWeight="SemiBold" /><TextBlock Text="mit Bestätigung" Style="{StaticResource Text.Muted}" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.Tile}" Command="{Binding RestartCommand}">
+                        <StackPanel><TextBlock Text="Neustart" FontWeight="SemiBold" /><TextBlock Text="mit Bestätigung" Style="{StaticResource Text.Muted}" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.Tile}" Command="{Binding SleepCommand}">
+                        <StackPanel><TextBlock Text="Energiesparmodus" FontWeight="SemiBold" /><TextBlock Text="Standby" Style="{StaticResource Text.Muted}" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.Tile}" Command="{Binding LockPcCommand}">
+                        <StackPanel><TextBlock Text="Sperren" FontWeight="SemiBold" /><TextBlock Text="Sperrbildschirm" Style="{StaticResource Text.Muted}" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource Button.Tile}" Command="{Binding SignOutCommand}">
+                        <StackPanel><TextBlock Text="Abmelden" FontWeight="SemiBold" /><TextBlock Text="mit Bestätigung" Style="{StaticResource Text.Muted}" /></StackPanel>
+                    </Button>
+                </WrapPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,16">
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CountdownEnabled}" Content="Countdown vor Neustart/Herunterfahren (einstellbar unter Einstellungen)" Margin="0,0,16,0" />
+                    <Button Content="Geplantes Herunterfahren abbrechen" Command="{Binding AbortShutdownCommand}" Style="{StaticResource Button.Danger}" Margin="0" />
+                </StackPanel>
+
+                <!-- CMD & PowerShell Tools (§38) -->
+                <TextBlock Text="Windows-Werkzeuge" Style="{StaticResource Text.H2}" />
+                <ItemsControl ItemsSource="{Binding AllTools}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Style="{StaticResource Button.Tile}" Width="220"
+                                    Command="{Binding DataContext.LaunchCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding}">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                        <TextBlock Text="  UAC" Foreground="{DynamicResource Brush.Warning}" FontWeight="SemiBold"
+                                                   Visibility="{Binding RequiresAdmin, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource Text.Muted}" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Text.MutedWrap}" MaxWidth="900" HorizontalAlignment="Left" Margin="0,8,0,0"
+                           Text="Werkzeuge mit „UAC“ erfordern eine Bestätigung (Windows Hello, falls eingerichtet) und anschließend die Administratorfreigabe durch Windows. ULTIMATE X umgeht UAC niemals." />
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

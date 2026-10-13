@@ -1,0 +1,117 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <DataTemplate DataType="{x:Type vm:HardwareViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <Button Content="Neu erkennen" Command="{Binding RefreshCommand}" />
+                    <Button Content="SMART-Details lesen (Adminrechte)" Command="{Binding ReadSmartCommand}" />
+                    <Button Command="{Binding RevealSensitiveCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Content" Value="Seriennummern vollständig anzeigen" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SensitiveRevealed}" Value="True">
+                                        <Setter Property="Content" Value="Wieder maskieren" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+
+                <!-- Monitore grafisch (§21) -->
+                <TextBlock Text="Monitore" Style="{StaticResource Text.H2}" />
+                <ItemsControl ItemsSource="{Binding Monitors}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" Width="300" VerticalAlignment="Top">
+                                <StackPanel>
+                                    <Grid Height="150">
+                                        <ctl:ChamferBorder Width="{Binding BoxWidth}" Height="{Binding BoxHeight}" MaxHeight="140" Chamfer="6" BorderThickness="2"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center" Background="{DynamicResource Brush.SurfaceAlt}">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsPrimary}" Value="True">
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding Resolution}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        </ctl:ChamferBorder>
+                                    </Grid>
+                                    <DockPanel>
+                                        <ctl:ChamferBorder DockPanel.Dock="Right" Background="{DynamicResource Brush.AccentSoft}" Chamfer="4" Padding="6,1"
+                                                Visibility="{Binding IsPrimary, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="Hauptmonitor" FontSize="11" Foreground="{DynamicResource Brush.Accent}" />
+                                        </ctl:ChamferBorder>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.H3}" />
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding Details}" Style="{StaticResource Text.MutedWrap}" Margin="0,4,0,0" />
+                                    <TextBlock Text="{Binding Gpu, StringFormat='Grafikkarte: {0}'}" Style="{StaticResource Text.Muted}" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Laufwerke grafisch (§22) -->
+                <TextBlock Text="Laufwerke" Style="{StaticResource Text.H2}" />
+                <ItemsControl ItemsSource="{Binding Volumes}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" Width="440">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.H3}" FontSize="15" />
+                                    </DockPanel>
+                                    <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="10" Margin="0,10,0,8"
+                                                 Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Muted}" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Systeminformationen (§16) -->
+                <TextBlock Text="Systeminformationen" Style="{StaticResource Text.H2}" Margin="0,8,0,10" />
+                <ItemsControl ItemsSource="{Binding Sections}" ItemTemplate="{StaticResource InfoSectionTemplate}"
+                              ItemsPanel="{StaticResource WrapPanelTemplate}" />
+
+                <!-- Hardware-Topologie (§18) -->
+                <TextBlock Text="Hardware-Topologie" Style="{StaticResource Text.H2}" Margin="0,8,0,10" />
+                <ctl:ChamferBorder Style="{StaticResource Card}" HorizontalAlignment="Left" MinWidth="440">
+                    <TreeView ItemsSource="{Binding Topology}">
+                        <TreeView.ItemContainerStyle>
+                            <Style TargetType="TreeViewItem">
+                                <Setter Property="IsExpanded" Value="True" />
+                                <Setter Property="Foreground" Value="{DynamicResource Brush.Text}" />
+                                <Setter Property="Padding" Value="2,3" />
+                            </Style>
+                        </TreeView.ItemContainerStyle>
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate DataType="{x:Type vm:TreeNode}" ItemsSource="{Binding Children}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Muted}" />
+                                </StackPanel>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                </ctl:ChamferBorder>
+                <TextBlock Style="{StaticResource Text.MutedWrap}" MaxWidth="900" HorizontalAlignment="Left"
+                           Text="Es werden nur Komponenten angezeigt, die Windows tatsächlich meldet. Belegte/freie PCIe- und M.2-Steckplätze sind über Windows-APIs nicht zuverlässig ermittelbar und werden daher nicht erfunden." />
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

@@ -1,0 +1,22 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <!--
+    MSI-Installer (§3). Wird von build.ps1 nach "dotnet publish" gebaut:
+      dotnet build installer\UltimateX.Installer.wixproj -c Release -p:PublishDir=<Pfad> -p:ProductVersion=<x.y.z>
+  -->
+  <PropertyGroup>
+    <OutputName>UltimateX-WindowsControl-$(ProductVersion)-x64</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <Cultures>de-DE</Cultures>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.1.0</ProductVersion>
+    <PublishDir Condition="'$(PublishDir)' == ''">..\artifacts\publish\</PublishDir>
+    <DefineConstants>PublishDir=$(PublishDir);ProductVersion=$(ProductVersion)</DefineConstants>
+    <SuppressValidation>false</SuppressValidation>
+    <!-- WiX-Erweiterungen werden hier versioniert, nicht über Directory.Packages.props. -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+  </ItemGroup>
+</Project>

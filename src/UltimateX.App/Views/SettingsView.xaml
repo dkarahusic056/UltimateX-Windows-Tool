@@ -1,0 +1,112 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24" MaxWidth="900" HorizontalAlignment="Left">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <!-- Appearance (§11) -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Darstellung" Style="{StaticResource Text.H2}" />
+                        <TextBlock Text="Farbschema" Style="{StaticResource Text.Muted}" Margin="0,0,0,6" />
+                        <WrapPanel>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Theme" Content="System" IsChecked="{Binding ThemeSystem}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Theme" Content="Dunkel" IsChecked="{Binding ThemeDark}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Theme" Content="Hell" IsChecked="{Binding ThemeLight}" />
+                        </WrapPanel>
+                        <TextBlock Text="Layout" Style="{StaticResource Text.Muted}" Margin="0,10,0,6" />
+                        <WrapPanel>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Layout" Content="Modern Control Center" IsChecked="{Binding LayoutModern}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Layout" Content="Gaming Mode" IsChecked="{Binding LayoutGaming}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Layout" Content="Technician Mode" IsChecked="{Binding LayoutTechnician}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Layout" Content="Visual PC Map" IsChecked="{Binding LayoutMap}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Layout" Content="Simple Mode" IsChecked="{Binding LayoutSimple}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Layout" Content="Admin / Service Mode" IsChecked="{Binding LayoutAdmin}" />
+                        </WrapPanel>
+                        <TextBlock Text="Sprache" Style="{StaticResource Text.Muted}" Margin="0,10,0,6" />
+                        <WrapPanel>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Lang" Content="Automatisch" IsChecked="{Binding LanguageAuto}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Lang" Content="Deutsch" IsChecked="{Binding LanguageGerman}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Lang" Content="English" IsChecked="{Binding LanguageEnglish}" />
+                        </WrapPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Visibility="{Binding LanguageRestartNeeded, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="Die Sprache wird nach einem Neustart der App übernommen." Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                            <Button Content="App neu starten" Command="{Binding RestartAppCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Security (§59, §60) -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Sicherheit" Style="{StaticResource Text.H2}" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SensitiveMode}" Margin="0,0,0,4"
+                                  Content="Sensible Daten maskieren (MAC, IP, Seriennummern)" />
+                        <TextBlock Text="Abschalten erfordert eine Bestätigung per Windows Hello." Style="{StaticResource Text.Muted}" Margin="50,0,0,12" />
+                        <TextBlock Text="Security Session nach erfolgreicher Bestätigung" Style="{StaticResource Text.Muted}" Margin="0,0,0,6" />
+                        <WrapPanel>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Session" Content="Immer erneut fragen" IsChecked="{Binding Session0}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Session" Content="1 Minute" IsChecked="{Binding Session1}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Session" Content="2 Minuten" IsChecked="{Binding Session2}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Session" Content="5 Minuten" IsChecked="{Binding Session5}" />
+                        </WrapPanel>
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,6,0,0"
+                                   Text="Die Session endet sofort beim Sperren des PCs, beim Benutzerwechsel und über den LOCK-Button. ULTIMATE X fragt niemals selbst nach Passwörtern oder PINs." />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Startup / Power -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Start &amp; Power" Style="{StaticResource Text.H2}" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding StartWithWindows}" Content="Mit Windows starten" Margin="0,0,0,10" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding StartMinimized}" Content="Minimiert starten" Margin="0,0,0,10" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CountdownEnabled}" Content="Countdown vor Neustart/Herunterfahren" Margin="0,0,0,8" />
+                        <WrapPanel Margin="50,0,0,0">
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Countdown" Content="10 s" IsChecked="{Binding Countdown10}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Countdown" Content="30 s" IsChecked="{Binding Countdown30}" />
+                            <RadioButton Style="{StaticResource Segment}" GroupName="Countdown" Content="60 s" IsChecked="{Binding Countdown60}" />
+                        </WrapPanel>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Benachrichtigungen, Wiederherstellung, Updates -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Benachrichtigungen &amp; Updates" Style="{StaticResource Text.H2}" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding NotificationsEnabled}" Margin="0,0,0,10"
+                                  Content="Windows-Benachrichtigungen (Updates, Speicherplatz, Temperatur, Reparaturen, Sicherheit)" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoRestorePoint}" Margin="0,0,0,10"
+                                  Content="Vor Treiber-Updates und Systemreparaturen Wiederherstellungspunkt anlegen" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding AutoCheckAppUpdates}" Margin="0,0,0,10"
+                                  Content="Beim Start im Hintergrund nach Updates suchen (Windows Update, winget, ULTIMATE X)" />
+                        <TextBlock Text="Update-Quelle für ULTIMATE X (HTTPS-Manifest des Herausgebers)" Style="{StaticResource Text.Muted}" Margin="0,4,0,6" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Speichern" Command="{Binding SaveUpdateUrlCommand}" Margin="8,0,0,0" />
+                            <TextBox Text="{Binding UpdateUrlInput, UpdateSourceTrigger=PropertyChanged}" MaxLength="500" />
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,6,0,0"
+                                   Text="Leer = keine Update-Prüfung. Updates werden nur installiert, wenn SHA-256 und Authenticode-Signatur (gleiches Zertifikat) passen. Änderung erfordert Bestätigung." />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Info -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Über" Style="{StaticResource Text.H2}" />
+                        <TextBlock Text="{Binding AppVersion, StringFormat='ULTIMATE X Windows Control – Version {0}'}" />
+                        <TextBlock Text="Your Complete Windows Control Center" Style="{StaticResource Text.Muted}" Margin="0,2,0,10" />
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,10"
+                                   Text="Keine Telemetrie. Alle Daten (Einstellungen, Logs, Speedtest-Verlauf, Backups) bleiben lokal unter %LOCALAPPDATA%\UltimateX." />
+                        <Button Content="Datenordner öffnen" Command="{Binding OpenDataFolderCommand}" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

@@ -1,0 +1,173 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <DataTemplate DataType="{x:Type vm:HealthViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <WrapPanel>
+                    <!-- Reparatur-Werkzeuge (§40–§43, §48) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Windows Health &amp; Repair" Style="{StaticResource Text.H2}" />
+                            <TextBlock Text="Systemdateien und Komponentenspeicher" Style="{StaticResource Text.Muted}" Margin="0,0,0,6" />
+                            <WrapPanel>
+                                <Button Content="Systemdateien prüfen (SFC)" Command="{Binding SfcCommand}" />
+                                <Button Content="Quick Check" Command="{Binding DismCheckCommand}" />
+                                <Button Content="Deep Scan" Command="{Binding DismScanCommand}" />
+                                <Button Content="Windows Repair" Command="{Binding DismRepairCommand}" Style="{StaticResource Button.Danger}" />
+                                <Button Content="Reparatur-Workflow (DISM → SFC)" Command="{Binding RepairWorkflowCommand}" Style="{StaticResource Button.Primary}" />
+                            </WrapPanel>
+                            <TextBlock Text="Datenträger (CHKDSK)" Style="{StaticResource Text.Muted}" Margin="0,8,0,6" />
+                            <WrapPanel>
+                                <ItemsControl ItemsSource="{Binding Drives}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Content="{Binding}" ContentStringFormat="{}{0}:" Padding="10,5"
+                                                    Command="{Binding DataContext.SelectDriveCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                    CommandParameter="{Binding}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding SelectedDrive, StringFormat='Ausgewählt: {0}:'}" VerticalAlignment="Center" Margin="4,0,12,8" FontWeight="SemiBold" />
+                                <Button Content="Prüfen (nur lesend)" Command="{Binding ChkdskScanCommand}" />
+                                <Button Content="Reparieren …" Command="{Binding ChkdskFixCommand}" Style="{StaticResource Button.Danger}" />
+                            </WrapPanel>
+                            <TextBlock Text="Arbeitsspeicher" Style="{StaticResource Text.Muted}" Margin="0,8,0,6" />
+                            <Button Content="Windows Memory Diagnostic …" Command="{Binding MemoryDiagnosticCommand}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,8,0,0"
+                                       Text="Alle Werkzeuge laufen über eine feste Befehlsliste und den signierten Admin-Helper. Windows fragt jeweils per UAC nach Administratorrechten." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Ergebnis / Command Output Viewer (§87) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top" Visibility="{Binding RepairTitle, Converter={StaticResource NullToVis}}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Anzeige abbrechen" Command="{Binding CancelCommand}"
+                                        Visibility="{Binding IsRepairRunning, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="{Binding RepairTitle}" Style="{StaticResource Text.H2}" />
+                            </DockPanel>
+                            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,10" Visibility="{Binding IsRepairRunning, Converter={StaticResource BoolToVis}}" />
+                            <DockPanel>
+                                <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" VerticalAlignment="Top" Margin="0,5,10,0"
+                                         Width="12" Height="12" Fill="{Binding RepairState, Converter={StaticResource StateBrush}}" />
+                                <TextBlock Text="{Binding RepairSummary}" Style="{StaticResource Text.Wrap}" FontSize="14" />
+                            </DockPanel>
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ShowTechnicalOutput}" Content="Technische Ausgabe anzeigen" Margin="0,12,0,8" />
+                            <ctl:ChamferBorder Background="{DynamicResource Brush.SurfaceAlt}" Chamfer="6" Padding="10" MaxHeight="320"
+                                    Visibility="{Binding ShowTechnicalOutput, Converter={StaticResource BoolToVis}}">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <TextBox Text="{Binding RepairOutput, Mode=OneWay}" IsReadOnly="True" Background="Transparent" BorderThickness="0"
+                                             FontFamily="{StaticResource Font.Mono}" FontSize="12" TextWrapping="Wrap" Padding="0" />
+                                </ScrollViewer>
+                            </ctl:ChamferBorder>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Neustartstatus (§37) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="360" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Updates &amp; Neustart" Style="{StaticResource Text.H2}" />
+                            <TextBlock Text="{Binding RebootText}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" Margin="0,0,0,4" />
+                            <ItemsControl ItemsSource="{Binding Reboot.Reasons}" Margin="0,0,0,6">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate><TextBlock Text="{Binding StringFormat='• {0}'}" Style="{StaticResource Text.Wrap}" Foreground="{DynamicResource Brush.Warning}" /></DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding ActiveHours}" Style="{StaticResource Text.Muted}" Margin="0,0,0,10" />
+                            <Button Content="Windows Update öffnen" Command="{Binding OpenWindowsUpdateCommand}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}"
+                                       Text="Windows Update wird von ULTIMATE X niemals deaktiviert. Neustarts lassen sich über die Nutzungszeit in den Windows-Einstellungen verschieben." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Wiederherstellungspunkte (§85, §86) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="360" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Wiederherstellung" Style="{StaticResource Text.H2}" />
+                            <TextBlock Text="{Binding RestorePointState}" Style="{StaticResource Text.Wrap}" Margin="0,0,0,10" />
+                            <Button Content="Wiederherstellungspunkt erstellen" Command="{Binding CreateRestorePointCommand}" HorizontalAlignment="Left" />
+                            <Button Content="Systemwiederherstellung öffnen" Command="{Binding OpenSystemRestoreCommand}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}"
+                                       Text="Vor „Windows Repair“, Datenträgerreparatur und Treiber-Updates wird automatisch ein Punkt angefordert (abschaltbar in den Einstellungen). Windows erstellt höchstens einen Punkt pro 24 Stunden." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Stabilität (§47) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="360" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Stabilität (30 Tage)" Style="{StaticResource Text.H2}" />
+                            <TextBlock Text="{Binding Crashes.BugChecks, StringFormat='Bluescreens: {0}', FallbackValue='Bluescreens: –'}" />
+                            <TextBlock Text="{Binding Crashes.UnexpectedShutdowns, StringFormat='Unerwartete Neustarts: {0}', FallbackValue='Unerwartete Neustarts: –'}" Margin="0,4,0,0" />
+                            <TextBlock Text="{Binding Crashes.AppCrashes, StringFormat='Programmabstürze: {0}', FallbackValue='Programmabstürze: –'}" Margin="0,4,0,0" />
+                            <TextBlock Text="{Binding Crashes.LastBugCheck, StringFormat='Letzter Bluescreen: {0:dd.MM.yyyy HH:mm}'}" Margin="0,4,0,0"
+                                       Visibility="{Binding Crashes.LastBugCheck, Converter={StaticResource NullToVis}}" />
+                            <TextBlock Text="{Binding Crashes.DumpInfo, StringFormat='Speicherabbilder: {0}'}" Style="{StaticResource Text.MutedWrap}" Margin="0,8,0,0"
+                                       Visibility="{Binding Crashes.DumpInfo, Converter={StaticResource NullToVis}}" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,8,0,0"
+                                       Text="Gezählt werden die entsprechenden Windows-Ereignisse. Eine Ursache wird nicht geraten – Details stehen unten in den Ereignisprotokollen." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </WrapPanel>
+
+                <!-- Dienste (§45) -->
+                <TextBlock Text="Wichtige Windows-Dienste" Style="{StaticResource Text.H2}" Margin="0,8,0,10" />
+                <ctl:ChamferBorder Style="{StaticResource Card}" HorizontalAlignment="Left" MinWidth="740">
+                    <ItemsControl ItemsSource="{Binding Services}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,3">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="20" />
+                                        <ColumnDefinition Width="280" />
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="140" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding Health, Converter={StaticResource StateBrush}}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="2" Text="{Binding State}" />
+                                    <TextBlock Grid.Column="3" Text="{Binding StartMode}" Style="{StaticResource Text.Muted}" />
+                                    <TextBlock Grid.Column="4" Text="{Binding Name}" Style="{StaticResource Text.Muted}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ctl:ChamferBorder>
+
+                <!-- Event Log Analysis (§46) -->
+                <TextBlock Text="Häufigste Probleme (Ereignisprotokolle, 7 Tage)" Style="{StaticResource Text.H2}" Margin="0,8,0,10" />
+                <ItemsControl ItemsSource="{Binding Problems}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" Padding="14,10" Margin="0,0,12,8">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Count, StringFormat='{}{0}×'}" FontWeight="SemiBold" FontSize="15" />
+                                        <TextBlock>
+                                            <Run Text="{Binding Level, Mode=OneWay}" Foreground="{DynamicResource Brush.Problem}" FontWeight="SemiBold" />
+                                            <Run Text=" · " />
+                                            <Run Text="{Binding Provider, Mode=OneWay}" FontWeight="SemiBold" />
+                                            <Run Text="{Binding EventId, Mode=OneWay, StringFormat=' · Event-ID {0}'}" />
+                                            <Run Text="{Binding Log, Mode=OneWay, StringFormat=' · {0}'}" Foreground="{DynamicResource Brush.TextMuted}" />
+                                        </TextBlock>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding Message}" Style="{StaticResource Text.MutedWrap}" Margin="0,4,0,0" MaxHeight="60" />
+                                    <TextBlock Text="{Binding LastSeen, StringFormat='Zuletzt: {0:dd.MM.yyyy HH:mm}'}" Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

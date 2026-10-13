@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    WPF-Oberfläche (MVVM). Läuft als Standardbenutzer (asInvoker) – Adminrechte werden
+    nur für einzelne Aktionen über den Admin-Helper und UAC angefordert (§55).
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>UltimateX.App</RootNamespace>
+    <AssemblyName>UltimateX</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Self-contained: keine separate .NET-Runtime-Installation nötig; App und Helper müssen identisch konfiguriert sein. -->
+    <SelfContained>true</SelfContained>
+    <ApplicationIcon>Assets\ultimatex.ico</ApplicationIcon>
+    <Title>ULTIMATE X Windows Control</Title>
+    <Description>Your Complete Windows Control Center</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- WPF-Projekte lassen System.IO / System.Net.Http aus den impliziten usings weg (Konflikt mit Shapes.Path); hier bewusst ergänzt. -->
+    <Using Include="System.IO" />
+    <Using Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UltimateX.Core\UltimateX.Core.csproj" />
+    <ProjectReference Include="..\UltimateX.Services\UltimateX.Services.csproj" />
+    <!-- Der Admin-Helper wird mitgebaut und neben die App kopiert. -->
+    <ProjectReference Include="..\UltimateX.AdminHelper\UltimateX.AdminHelper.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\ultimatex.ico" />
+    <Resource Include="Assets\ultimatex.png" />
+  </ItemGroup>
+</Project>

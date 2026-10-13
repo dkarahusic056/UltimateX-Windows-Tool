@@ -1,0 +1,84 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels"
+                    xmlns:ctl="clr-namespace:UltimateX.App.Controls">
+
+    <DataTemplate DataType="{x:Type vm:MonitorViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="Zeitraum:" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,10,6" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="Range" Content="60 Sekunden" IsChecked="{Binding Range60}" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="Range" Content="5 Minuten" IsChecked="{Binding Range300}" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="Range" Content="15 Minuten" IsChecked="{Binding Range900}" />
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Tiles}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" Width="420">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" Style="{StaticResource Text.Icon}" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,10,0" />
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                    <ctl:Sparkline Height="90" Margin="0,12,0,0" Values="{Binding History}" Maximum="{Binding Maximum}"
+                                                   Stroke="{DynamicResource Brush.Accent}" Fill="{DynamicResource Brush.ChartFill}" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Sensor-Center (§20): jede Zeile mit Quelle, nichts geschätzt -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <Button DockPanel.Dock="Right" Content="Echte CPU-Temperaturen?" Command="{Binding OpenHwInfoInfoCommand}" />
+                            <ComboBox DockPanel.Dock="Right" Width="150" Margin="0,0,10,0" ItemsSource="{Binding SensorFilters}" SelectedItem="{Binding SensorFilter}" />
+                            <TextBlock Text="Sensoren" Style="{StaticResource Text.H3}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Providers}" Margin="0,0,0,10">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,2">
+                                        <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource Brush.Na}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Width="230" />
+                                        <TextBlock Text="{Binding Hint}" Style="{StaticResource Text.Muted}" TextWrapping="Wrap" />
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Active}" Value="True">
+                                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource Brush.Ok}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding SensorGroups}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ctl:ChamferBorder Style="{StaticResource Card.Inner}" Width="400" Margin="0,0,10,10">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Hardware}" FontWeight="SemiBold" Margin="0,0,0,6" TextTrimming="CharacterEllipsis" />
+                                            <ItemsControl ItemsSource="{Binding Lines}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <DockPanel Margin="0,1" ToolTip="{Binding Source}">
+                                                            <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" FontWeight="SemiBold" />
+                                                            <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Muted}" TextTrimming="CharacterEllipsis" />
+                                                        </DockPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </ctl:ChamferBorder>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

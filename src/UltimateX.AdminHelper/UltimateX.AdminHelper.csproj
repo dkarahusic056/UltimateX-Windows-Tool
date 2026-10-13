@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Minimaler, erhöht laufender Helper. Einziger Prozess der Lösung mit Adminrechten.
+    WinExe = kein Konsolenfenster. Das Manifest fordert "requireAdministrator", damit
+    Windows immer UAC zeigt – es gibt keinen Weg, ihn still erhöht zu starten.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>UltimateX.AdminHelper</RootNamespace>
+    <AssemblyName>UltimateX.AdminHelper</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Self-contained: keine separate .NET-Runtime-Installation nötig; App und Helper müssen identisch konfiguriert sein. -->
+    <SelfContained>true</SelfContained>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- WMI für SMART-Daten und Wiederherstellungspunkte (nur im erhöhten Helper) -->
+    <PackageReference Include="System.Management" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UltimateX.Core\UltimateX.Core.csproj" />
+  </ItemGroup>
+</Project>

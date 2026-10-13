@@ -1,0 +1,181 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <!-- Gemeinsames Muster: Kopfzeile (Filter + Aktionen) und eine virtualisierte Tabelle, die den Rest füllt. -->
+
+    <!-- ===================== Treiber (§30) ===================== -->
+    <DataTemplate DataType="{x:Type vm:DriversViewModel}">
+        <DockPanel Margin="0,0,12,12">
+            <StackPanel DockPanel.Dock="Top">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource Card.Notice}" Margin="0,0,0,12">
+                    <TextBlock Style="{StaticResource Text.Wrap}"
+                               Text="Treiber-Updates kommen ausschließlich über Windows Update (von Microsoft signiert, passend zur Hardware-ID) und werden nur mit Ihrer Zustimmung installiert – unter „Updates“. Für neueste Grafiktreiber nutzen Sie die offiziellen Seiten von NVIDIA, AMD oder Intel; Drittanbieter-Treiberportale werden bewusst nicht verwendet." />
+                </ctl:ChamferBorder>
+                <DockPanel Margin="0,0,0,8">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Style="{StaticResource Button.Primary}" Content="Nach Treiber-Updates suchen" Command="{Binding CheckUpdatesCommand}" />
+                        <Button Content="Windows Update" Command="{Binding OpenWindowsUpdateCommand}" />
+                        <Button Content="Geräte-Manager" Command="{Binding OpenDeviceManagerCommand}" />
+                        <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" Margin="0,0,0,8" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="0,0,12,8" ToolTip="Filtern nach Gerät, Hersteller, Klasse" />
+                        <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ImportantOnly}" Content="Nur wichtige Geräteklassen" Margin="0,0,12,8" />
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,0,8" />
+                    </StackPanel>
+                </DockPanel>
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsSearchingUpdates, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Rows}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="24">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><Ellipse Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Gerät" Binding="{Binding Device}" Width="2*" />
+                    <DataGridTextColumn Header="Klasse" Binding="{Binding Class}" Width="*" />
+                    <DataGridTextColumn Header="Hersteller" Binding="{Binding Manufacturer}" Width="*" />
+                    <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="130" />
+                    <DataGridTextColumn Header="Datum" Binding="{Binding Date}" Width="95" />
+                    <DataGridTextColumn Header="Neue Version" Binding="{Binding NewVersion}" Width="140" />
+                    <DataGridTextColumn Header="Quelle" Binding="{Binding Source}" Width="110" />
+                    <DataGridTextColumn Header="Signiert" Binding="{Binding Signed}" Width="70" />
+                    <DataGridTextColumn Header="Signiert von" Binding="{Binding Signer}" Width="*" />
+                    <DataGridTextColumn Header="INF" Binding="{Binding Inf}" Width="100" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </DataTemplate>
+
+    <!-- ===================== Programme (§34) ===================== -->
+    <DataTemplate DataType="{x:Type vm:ProgramsViewModel}">
+        <DockPanel Margin="0,0,12,12">
+            <StackPanel DockPanel.Dock="Top">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <DockPanel Margin="0,0,0,8">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="Installationsordner öffnen" Command="{Binding OpenFolderCommand}" />
+                        <Button Content="Deinstallieren …" Command="{Binding UninstallCommand}" ToolTip="Öffnet Windows „Apps &amp; Features“" />
+                        <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" Margin="0,0,0,8" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="0,0,12,8" ToolTip="Filtern nach Name oder Hersteller" />
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,0,8" />
+                    </StackPanel>
+                </DockPanel>
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*" />
+                    <DataGridTextColumn Header="Hersteller" Binding="{Binding Publisher}" Width="*" />
+                    <DataGridTextColumn Header="Version" Binding="{Binding Version}" Width="130" />
+                    <DataGridTextColumn Header="Größe" Binding="{Binding Size}" Width="90" />
+                    <DataGridTextColumn Header="Installiert" Binding="{Binding Date}" Width="95" />
+                    <DataGridTextColumn Header="Bereich" Binding="{Binding Scope}" Width="150" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </DataTemplate>
+
+    <!-- ===================== Autostart (§35) ===================== -->
+    <DataTemplate DataType="{x:Type vm:StartupViewModel}">
+        <DockPanel Margin="0,0,12,12">
+            <StackPanel DockPanel.Dock="Top">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <DockPanel Margin="0,0,0,8">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="Letztes Backup wiederherstellen" Command="{Binding RestoreLastBackupCommand}" />
+                        <Button Content="Backups öffnen" Command="{Binding OpenBackupsCommand}" />
+                        <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" Margin="0,0,0,8" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Text.MutedWrap}" VerticalAlignment="Center" Margin="0,0,12,8">
+                        <Run Text="{Binding Summary, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text=" · Einträge werden nie gelöscht, nur wie im Task-Manager aktiviert/deaktiviert. Vor jeder Änderung wird ein Backup erstellt. Einträge für alle Benutzer erfordern UAC." />
+                    </TextBlock>
+                </DockPanel>
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Rows}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Aktiv" Width="70">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding Enabled, UpdateSourceTrigger=PropertyChanged}"
+                                          IsEnabled="{Binding CanToggle}" ToolTip="{Binding ToggleHint}" ToolTipService.ShowOnDisabled="True" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Name" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <ctl:ChamferBorder Background="{DynamicResource Brush.AccentSoft}" Chamfer="4" Padding="6,1" Margin="8,0,0,0"
+                                            Visibility="{Binding IsSystemRelevant, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="systemrelevant" FontSize="11" Foreground="{DynamicResource Brush.Accent}" />
+                                    </ctl:ChamferBorder>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Herausgeber" Binding="{Binding Publisher}" Width="*" />
+                    <DataGridTemplateColumn Header="Signatur" Width="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding SignatureState, Converter={StaticResource StateBrush}}" />
+                                    <TextBlock Text="{Binding SignatureText}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Quelle" Binding="{Binding Source}" Width="190" />
+                    <DataGridTextColumn Header="Pfad" Binding="{Binding Path}" Width="2*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </DataTemplate>
+
+    <!-- ===================== Logs (§80, §81) ===================== -->
+    <DataTemplate DataType="{x:Type vm:LogsViewModel}">
+        <DockPanel Margin="0,0,12,12">
+            <StackPanel DockPanel.Dock="Top">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <DockPanel Margin="0,0,0,8">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="Exportieren (TXT/JSON) …" Command="{Binding ExportCommand}" />
+                        <Button Content="Ordner öffnen" Command="{Binding OpenFolderCommand}" />
+                        <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" Margin="0,0,0,8" />
+                    </StackPanel>
+                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding SecurityOnly}" Content="Nur Security-Ereignisse" Margin="0,0,0,8" />
+                </DockPanel>
+            </StackPanel>
+            <DataGrid ItemsSource="{Binding Rows}">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Width="24">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate><Ellipse Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" /></DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Zeit" Binding="{Binding Time}" Width="140" />
+                    <DataGridTextColumn Header="Stufe" Binding="{Binding Level}" Width="80" />
+                    <DataGridTextColumn Header="Bereich" Binding="{Binding Category}" Width="80" />
+                    <DataGridTextColumn Header="Aktion" Binding="{Binding Action}" Width="150" />
+                    <DataGridTextColumn Header="Meldung" Binding="{Binding Message}" Width="2*" />
+                    <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </DataTemplate>
+</ResourceDictionary>

@@ -1,0 +1,38 @@
+<Project>
+  <!--
+    Gemeinsame Build-Einstellungen für alle Projekte.
+    Sicherheit / Qualität (Prompt §92, §94):
+      - Nullable Reference Types
+      - .NET-Analyzer inkl. Security-Regeln
+      - Lock-Files für reproduzierbare Restores (in CI erzwungen)
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Release-Gate: In Release-Builds sind Nullable-Warnungen Fehler (häufigste Absturzquelle). -->
+    <WarningsAsErrors Condition="'$(Configuration)' == 'Release'">$(WarningsAsErrors);nullable</WarningsAsErrors>
+
+    <!-- Erlaubt das Bauen von Windows-Projekten auch auf CI-Agents anderer OS. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(ContinuousIntegrationBuild)' == 'true' And Exists('$(MSBuildProjectDirectory)\packages.lock.json')">true</RestoreLockedMode>
+
+    <Deterministic>true</Deterministic>
+
+    <Version>1.1.0</Version>
+    <Company>ULTIMATE X</Company>
+    <Product>ULTIMATE X Windows Control</Product>
+    <Copyright>© 2026 ULTIMATE X</Copyright>
+  </PropertyGroup>
+</Project>

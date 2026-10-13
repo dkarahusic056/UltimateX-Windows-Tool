@@ -1,0 +1,145 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <DataTemplate DataType="{x:Type vm:NetworkViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,0,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Style="{StaticResource Button.Primary}" Content="Netzwerk analysieren" Command="{Binding DiagnoseCommand}" />
+                    <Button Content="DNS testen" Command="{Binding TestDnsCommand}" />
+                    <Button Content="Öffentliche IP abfragen" Command="{Binding LoadPublicIpCommand}" />
+                    <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" />
+                    <Button Command="{Binding RevealSensitiveCommand}">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Content" Value="Adressen vollständig anzeigen" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SensitiveRevealed}" Value="True">
+                                        <Setter Property="Content" Value="Wieder maskieren" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,12,8" Visibility="{Binding IsToolRunning, Converter={StaticResource BoolToVis}}" />
+
+                <WrapPanel>
+                    <!-- Öffentliche IP (§24) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="300" VerticalAlignment="Top" Visibility="{Binding PublicIpLoaded, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <TextBlock Text="Öffentliche IP" Style="{StaticResource Text.H3}" Margin="0,0,0,8" />
+                            <TextBlock Text="{Binding PublicIpV4, StringFormat='IPv4: {0}', TargetNullValue='IPv4: nicht verfügbar'}" />
+                            <TextBlock Text="{Binding PublicIpV6, StringFormat='IPv6: {0}', TargetNullValue='IPv6: nicht verfügbar'}" Margin="0,4,0,0" />
+                            <TextBlock Text="Quelle: ipify.org (HTTPS)" Style="{StaticResource Text.Muted}" Margin="0,8,0,0" />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Diagnose (§27) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="520" VerticalAlignment="Top" Visibility="{Binding Diagnosis.Count, Converter={StaticResource NullToVis}, FallbackValue=Collapsed}">
+                        <StackPanel>
+                            <TextBlock Text="Netzwerkdiagnose" Style="{StaticResource Text.H3}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding Diagnosis}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="170" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Text.MutedWrap}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- DNS (§29) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="440" VerticalAlignment="Top" Visibility="{Binding DnsResults.Count, Converter={StaticResource NullToVis}, FallbackValue=Collapsed}">
+                        <StackPanel>
+                            <TextBlock Text="DNS-Test (A-Abfrage www.microsoft.com)" Style="{StaticResource Text.H3}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding DnsResults}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="160" />
+                                                <ColumnDefinition Width="90" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Server}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="1" Text="{Binding ResponseMs, StringFormat='{}{0:0} ms', TargetNullValue='–'}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Detail}" Style="{StaticResource Text.Muted}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Ping (§28) -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="440" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="Ping" Style="{StaticResource Text.H3}" Margin="0,0,0,8" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Gateway" Command="{Binding SetPingTargetCommand}" CommandParameter="gateway" Padding="10,5" />
+                                <Button Content="1.1.1.1" Command="{Binding SetPingTargetCommand}" CommandParameter="1.1.1.1" Padding="10,5" />
+                                <Button Content="8.8.8.8" Command="{Binding SetPingTargetCommand}" CommandParameter="8.8.8.8" Padding="10,5" />
+                            </StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Primary}" Content="Ping (10×)" Command="{Binding PingCommand}" Margin="8,0,0,0" />
+                                <TextBox Text="{Binding PingTarget, UpdateSourceTrigger=PropertyChanged}" MaxLength="253" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding PingError}" Foreground="{DynamicResource Brush.Problem}" Style="{StaticResource Text.Wrap}"
+                                       Visibility="{Binding PingError, Converter={StaticResource NullToVis}}" />
+                            <Grid Visibility="{Binding PingResult, Converter={StaticResource NullToVis}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition /><ColumnDefinition /><ColumnDefinition /><ColumnDefinition />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel><TextBlock Text="Minimum" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding PingResult.MinMs, StringFormat='{}{0} ms', TargetNullValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" /></StackPanel>
+                                <StackPanel Grid.Column="1"><TextBlock Text="Maximum" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding PingResult.MaxMs, StringFormat='{}{0} ms', TargetNullValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" /></StackPanel>
+                                <StackPanel Grid.Column="2"><TextBlock Text="Average" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding PingResult.AvgMs, StringFormat='{}{0:0.0} ms', TargetNullValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" /></StackPanel>
+                                <StackPanel Grid.Column="3"><TextBlock Text="Packet Loss" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding PingResult.LossPercent, StringFormat='{}{0:0} %'}" Style="{StaticResource Text.Value}" FontSize="18" /></StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </WrapPanel>
+
+                <!-- Adapter (§24, §25) -->
+                <TextBlock Text="Netzwerkadapter" Style="{StaticResource Text.H2}" Margin="0,8,0,10" />
+                <ItemsControl ItemsSource="{Binding Adapters}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" Width="440" VerticalAlignment="Top">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,8">
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource Button.Link}" Content="MAC kopieren"
+                                                Command="{Binding DataContext.CopyMacCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" Visibility="{Binding Mac, Converter={StaticResource NullToVis}}" />
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Text.H3}" FontSize="15" />
+                                            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.Muted}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource InfoItemTemplate}" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <!-- WLAN (§26) -->
+                <TextBlock Text="WLAN" Style="{StaticResource Text.H2}" Margin="0,8,0,10" />
+                <ItemsControl ItemsSource="{Binding WlanSections}" ItemTemplate="{StaticResource InfoSectionTemplate}" ItemsPanel="{StaticResource WrapPanelTemplate}" />
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

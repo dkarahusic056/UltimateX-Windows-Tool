@@ -1,0 +1,458 @@
+<ResourceDictionary xmlns:ctl="clr-namespace:UltimateX.App.Controls" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels">
+
+    <!-- ===================== Benchmarks (§103) ===================== -->
+    <DataTemplate x:Key="BenchmarkCardTemplate" DataType="{x:Type vm:BenchmarkCard}">
+        <StackPanel>
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" Style="{StaticResource Text.Icon}" FontSize="22" Foreground="{DynamicResource Brush.Accent}" Margin="0,0,10,0" />
+                <TextBlock Text="{Binding Title}" Style="{StaticResource Text.H2}" Margin="0" VerticalAlignment="Center" />
+            </DockPanel>
+            <TextBlock Text="{Binding Description}" Style="{StaticResource Text.MutedWrap}" Margin="0,6,0,10" />
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Score}" FontSize="34" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" />
+                <TextBlock Text="Punkte" Style="{StaticResource Text.Muted}" VerticalAlignment="Bottom" Margin="6,0,0,8" />
+            </StackPanel>
+            <TextBlock Text="{Binding When}" Style="{StaticResource Text.Muted}" />
+            <TextBlock Text="{Binding Comparison}" Style="{StaticResource Text.MutedWrap}" Visibility="{Binding Comparison, Converter={StaticResource NullToVis}}" />
+            <ItemsControl ItemsSource="{Binding Metrics}" Margin="0,8,0,0">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <DockPanel Margin="0,1">
+                            <TextBlock DockPanel.Dock="Right" FontWeight="SemiBold">
+                                <Run Text="{Binding Value, StringFormat='{}{0:N1}', Mode=OneWay}" /> <Run Text="{Binding Unit, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Muted}" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding Note}" Style="{StaticResource Text.MutedWrap}" Foreground="{DynamicResource Brush.Warning}" Margin="0,6,0,0"
+                       Visibility="{Binding Note, Converter={StaticResource NullToVis}}" />
+        </StackPanel>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:BenchmarkViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource Card.Notice}">
+                    <TextBlock Style="{StaticResource Text.Wrap}"
+                               Text="Alle Tests laufen lokal und ohne Zusatzsoftware. Die Punktzahlen dienen dem Vergleich mit früheren Läufen auf diesem PC (z. B. nach Treiber-Updates oder Aufrüstung) – nicht dem Vergleich mit Online-Ranglisten." />
+                </ctl:ChamferBorder>
+
+                <ctl:ChamferBorder Style="{StaticResource Card}" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Abbrechen" Command="{Binding CancelCommand}" Margin="12,0,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="{Binding RunningStep}" FontWeight="SemiBold" />
+                            <ProgressBar Value="{Binding RunningPercent}" Maximum="100" Height="6" Margin="0,6,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </ctl:ChamferBorder>
+
+                <UniformGrid Columns="3">
+                    <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Bottom" Style="{StaticResource Button.Primary}" Content="CPU testen" Command="{Binding RunCpuCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                                    IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            <ContentPresenter Content="{Binding Cpu}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
+                        </DockPanel>
+                    </ctl:ChamferBorder>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Bottom" Style="{StaticResource Button.Primary}" Content="RAM testen" Command="{Binding RunMemoryCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"
+                                    IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            <ContentPresenter Content="{Binding Memory}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
+                        </DockPanel>
+                    </ctl:ChamferBorder>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                                <ComboBox ItemsSource="{Binding Drives}" SelectedItem="{Binding SelectedDrive}" Margin="0,0,0,6" />
+                                <ComboBox ItemsSource="{Binding Sizes}" SelectedItem="{Binding SelectedSize}" Margin="0,0,0,8" />
+                                <Button Style="{StaticResource Button.Primary}" Content="Datenträger testen" Command="{Binding RunDiskCommand}" HorizontalAlignment="Left"
+                                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            </StackPanel>
+                            <ContentPresenter Content="{Binding Disk}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
+                        </DockPanel>
+                    </ctl:ChamferBorder>
+                </UniformGrid>
+
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Verlauf" Style="{StaticResource Text.H2}" />
+                        <DataGrid ItemsSource="{Binding History}" MaxHeight="360">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Zeitpunkt" Binding="{Binding Date}" Width="150" />
+                                <DataGridTextColumn Header="Test" Binding="{Binding Kind}" Width="110" />
+                                <DataGridTextColumn Header="Punkte" Binding="{Binding Score}" Width="90" />
+                                <DataGridTextColumn Header="Details" Binding="{Binding Summary}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+
+    <!-- ===================== Netzwerk-Scanner (§103) ===================== -->
+    <Style x:Key="RowAction" TargetType="Button" BasedOn="{StaticResource Button.Link}">
+        <Setter Property="FontFamily" Value="{StaticResource Font.DisplayCondensed}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+    </Style>
+
+    <DataTemplate DataType="{x:Type vm:NetworkScannerViewModel}">
+        <DockPanel Margin="0,0,12,12">
+            <StackPanel DockPanel.Dock="Top">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="430" />
+                    </Grid.ColumnDefinitions>
+                    <!-- Scan -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Content="Abbrechen" Command="{Binding CancelCommand}" Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
+                                    <Button Style="{StaticResource Button.Primary}" Content="Netzwerk scannen" Command="{Binding ScanCommand}" Margin="0,0,0,8"
+                                            IsEnabled="{Binding IsScanning, Converter={StaticResource InvBool}}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Netzwerk:" VerticalAlignment="Center" Margin="0,0,8,8" />
+                                    <ComboBox ItemsSource="{Binding Subnets}" SelectedItem="{Binding SelectedSubnet}" MinWidth="300" Margin="0,0,0,8" />
+                                </StackPanel>
+                            </DockPanel>
+                            <ProgressBar Value="{Binding ScanPercent}" Maximum="100" Height="4" Visibility="{Binding IsScanning, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Text="{Binding ScanSummary}" FontWeight="SemiBold" Margin="0,6,0,0" Visibility="{Binding ScanSummary, Converter={StaticResource NullToVis}}" />
+                            <WrapPanel Margin="0,8,0,0">
+                                <Button Content="Herstellerliste laden (IEEE)" Command="{Binding DownloadVendorsCommand}" />
+                                <Button Content="Bekannte Geräte vergessen" Command="{Binding ForgetDevicesCommand}" />
+                            </WrapPanel>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,4,0,0"
+                                       Text="Gescannt wird nur das eigene, private Netzwerk (z. B. 192.168.x.x). Port-Prüfung nur auf Klick und nur für gängige Dienste – kein Angriffswerkzeug." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                    <!-- QUICK PING -->
+                    <ctl:ChamferBorder Grid.Column="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="QUICK PING" Style="{StaticResource Text.CardHeader}" Margin="0,0,0,8" />
+                            <DockPanel Margin="0,0,0,8">
+                                <ComboBox DockPanel.Dock="Right" Width="110" Margin="8,0,0,0" ItemsSource="{Binding PingModes}" SelectedItem="{Binding PingMode}" />
+                                <TextBox Text="{Binding QuickPingInput, UpdateSourceTrigger=PropertyChanged}" MaxLength="253"
+                                         ToolTip="IP-Adresse, Hostname oder lokaler DNS-Name (z. B. 192.168.178.1, fritz.box, drucker.local)" />
+                            </DockPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Style="{StaticResource Button.Primary}" Content="PING" Command="{Binding QuickPingCommand}" MinWidth="110" />
+                                <Button Content="STOP" Command="{Binding StopPingCommand}" Visibility="{Binding IsPinging, Converter={StaticResource BoolToVis}}" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,6,0,0"
+                                       Text="IP, Hostname oder lokaler Name. Ping über die Windows-API – keine Kommandozeile." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </Grid>
+            </StackPanel>
+
+            <!-- Rechte Spalte: Ping-Auswertung und Gerätedetails -->
+            <ScrollViewer DockPanel.Dock="Right" Width="430" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding PingResult.State, Converter={StaticResource StateBrush}, FallbackValue={StaticResource Brush.AccentHot}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right" Content="STOP" Command="{Binding StopPingCommand}" Visibility="{Binding IsPinging, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="LIVE PING" Style="{StaticResource Text.CardHeader}" />
+                            </DockPanel>
+                            <TextBlock Text="Ein Gerät mit „PING“ oder „LIVE PING“ prüfen oder oben ein Ziel eingeben." Style="{StaticResource Text.MutedWrap}"
+                                       Visibility="{Binding PingTarget, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                            <StackPanel Visibility="{Binding PingTarget, Converter={StaticResource NullToVis}}">
+                                <TextBlock Style="{StaticResource Text.Mono}">
+                                    <Run Text="{Binding PingTarget, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding PingResult.ResolvedAddress, Mode=OneWay}" Foreground="{DynamicResource Brush.TextMuted}" />
+                                </TextBlock>
+                                <TextBlock Text="{Binding PingResult.StatusText, FallbackValue='Wird gesendet …'}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" Margin="0,4,0,8"
+                                           Foreground="{Binding PingResult.State, Converter={StaticResource StateBrush}}" />
+                                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsPinging, Converter={StaticResource BoolToVis}}" />
+                                <ctl:LatencyChart Height="120" Replies="{Binding PingReplies}" BarBrush="{DynamicResource Brush.AccentHot}" LossBrush="{DynamicResource Brush.Problem}"
+                                                  GridBrush="{DynamicResource Brush.Grid}" LabelBrush="{DynamicResource Brush.TextDim}" Margin="0,0,0,10" />
+                                <UniformGrid Columns="4" Margin="0,0,0,6">
+                                    <StackPanel>
+                                        <TextBlock Text="GESENDET" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.Sent, FallbackValue='0'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="EMPFANGEN" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.Received, FallbackValue='0'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="VERLUST" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.LossPercent, StringFormat='{}{0:0} %', FallbackValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="JITTER" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.JitterMs, StringFormat='{}{0:0.#} ms', TargetNullValue='–', FallbackValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <UniformGrid Columns="3" Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock Text="MIN" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.MinMs, StringFormat='{}{0} ms', TargetNullValue='–', FallbackValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="Ø" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.AvgMs, StringFormat='{}{0:0.#} ms', TargetNullValue='–', FallbackValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="MAX" Style="{StaticResource Text.Muted}" FontSize="10" />
+                                        <TextBlock Text="{Binding PingResult.MaxMs, StringFormat='{}{0} ms', TargetNullValue='–', FallbackValue='–'}" Style="{StaticResource Text.Value}" FontSize="18" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <ItemsControl ItemsSource="{Binding PingLog}" MaxHeight="160">
+                                    <ItemsControl.Template>
+                                        <ControlTemplate TargetType="ItemsControl">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto"><ItemsPresenter /></ScrollViewer>
+                                        </ControlTemplate>
+                                    </ItemsControl.Template>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" Style="{StaticResource Text.Mono}" FontSize="11" Foreground="{DynamicResource Brush.TextMuted}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Visibility="{Binding DetailText, Converter={StaticResource NullToVis}}">
+                        <StackPanel>
+                            <TextBlock Text="GERÄTEDETAILS" Style="{StaticResource Text.CardHeader}" Margin="0,0,0,8" />
+                            <TextBlock Text="{Binding DetailText}" Style="{StaticResource Text.Wrap}" LineHeight="20" />
+                            <WrapPanel Margin="0,10,0,0">
+                                <Button Content="PING" Command="{Binding PingDeviceCommand}" CommandParameter="{Binding DetailDevice}" />
+                                <Button Content="LIVE PING" Command="{Binding LivePingDeviceCommand}" CommandParameter="{Binding DetailDevice}" />
+                                <Button Content="SERVICES" Command="{Binding ServicesCommand}" CommandParameter="{Binding DetailDevice}" />
+                                <Button Content="Weboberfläche" Command="{Binding OpenInBrowserCommand}" CommandParameter="{Binding DetailDevice}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </StackPanel>
+            </ScrollViewer>
+
+            <DataGrid ItemsSource="{Binding Devices}" SelectedItem="{Binding SelectedDevice}" Margin="0,0,12,0">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="" Width="48">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <ctl:ChamferBorder Style="{StaticResource Badge}" Background="{DynamicResource Brush.Accent}" BorderBrush="{DynamicResource Brush.AccentHot}"
+                                                   Visibility="{Binding IsNew, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="NEU" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Brush.AccentText}" />
+                                </ctl:ChamferBorder>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="IP-Adresse" Binding="{Binding Ip}" Width="115" />
+                    <DataGridTextColumn Header="Typ" Binding="{Binding Type}" Width="110" />
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="140" />
+                    <DataGridTextColumn Header="Hersteller" Binding="{Binding Vendor}" Width="140" />
+                    <DataGridTextColumn Header="MAC" Binding="{Binding Mac}" Width="130" />
+                    <DataGridTextColumn Header="Ping" Binding="{Binding Ping}" Width="70" />
+                    <DataGridTemplateColumn Header="Aktionen" Width="330">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Style="{StaticResource RowAction}" Content="PING" ToolTip="4 Pings senden und auswerten"
+                                            Command="{Binding DataContext.PingDeviceCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource RowAction}" Content="LIVE PING" ToolTip="Dauerhaft pingen mit Live-Diagramm (STOP beendet)"
+                                            Command="{Binding DataContext.LivePingDeviceCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource RowAction}" Content="DETAILS"
+                                            Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource RowAction}" Content="SERVICES" ToolTip="Gängige Dienste prüfen (nur auf Klick)"
+                                            Command="{Binding DataContext.ServicesCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource RowAction}" Content="COPY IP"
+                                            Command="{Binding DataContext.CopyIpCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                    <Button Style="{StaticResource RowAction}" Content="COPY MAC"
+                                            Command="{Binding DataContext.CopyMacCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Eigene Bezeichnung" Width="170">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource Button.Link}" Content="&#xE74E;" FontFamily="{StaticResource Font.Icons}" ToolTip="Speichern"
+                                            Command="{Binding DataContext.SaveLabelCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}" />
+                                    <TextBox Text="{Binding Label, UpdateSourceTrigger=PropertyChanged}" MinWidth="100" MaxLength="64" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="Dienste" Width="*">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding PortState, Converter={StaticResource StateBrush}}"
+                                             Visibility="{Binding Ports, Converter={StaticResource NullToVis}}" />
+                                    <TextBlock Text="{Binding Ports}" VerticalAlignment="Center" ToolTip="{Binding Ports}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </DataTemplate>
+
+    <!-- ===================== Absturzanalyse (§103) ===================== -->
+    <DataTemplate DataType="{x:Type vm:CrashAnalysisViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <TextBlock Text="Zeitraum (Tage):" VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <ComboBox ItemsSource="{Binding DayOptions}" SelectedItem="{Binding Days}" Width="80" />
+                            <Button Content="Zuverlässigkeitsverlauf" Command="{Binding OpenReliabilityMonitorCommand}" Margin="8,0,0,0" />
+                            <Button Content="RAM testen" Command="{Binding RunMemoryDiagnosticCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Summary}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </DockPanel>
+                </ctl:ChamferBorder>
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+
+                <!-- Hinweise / Diagnose -->
+                <ItemsControl ItemsSource="{Binding Hints}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" Padding="14,10">
+                                <DockPanel>
+                                    <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" Fill="{Binding Severity, Converter={StaticResource StateBrush}}" VerticalAlignment="Top" Margin="0,5,12,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.H3}" FontSize="14" />
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.MutedWrap}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Bluescreens -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Bluescreens" Style="{StaticResource Text.H2}" />
+                        <TextBlock Text="Keine Bluescreens im gewählten Zeitraum." Style="{StaticResource Text.Muted}"
+                                   Visibility="{Binding BlueScreens.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                        <ItemsControl ItemsSource="{Binding BlueScreens}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ctl:ChamferBorder Style="{StaticResource Card.Inner}">
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Date}" Style="{StaticResource Text.Muted}" />
+                                                <TextBlock FontWeight="SemiBold">
+                                                    <Run Text="{Binding Name, Mode=OneWay}" /> <Run Text="{Binding Code, Mode=OneWay}" Foreground="{DynamicResource Brush.TextMuted}" />
+                                                </TextBlock>
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding Meaning}" Style="{StaticResource Text.Wrap}" Margin="0,4,0,0" />
+                                            <TextBlock Text="{Binding Advice}" Style="{StaticResource Text.Wrap}" Foreground="{DynamicResource Brush.Accent}" Margin="0,4,0,0" />
+                                            <TextBlock Style="{StaticResource Text.Muted}" FontSize="11" Margin="0,4,0,0">
+                                                <Run Text="Parameter:" /> <Run Text="{Binding Parameters, Mode=OneWay}" /> <Run Text="· Quelle:" /> <Run Text="{Binding Source, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </ctl:ChamferBorder>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Absturzabbilder -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Content="Absturzabbilder lesen (Admin)" Command="{Binding LoadDumpsCommand}" />
+                                <Button Style="{StaticResource Button.Primary}" Content="Ursache ermitteln" Command="{Binding AnalyzeDumpCommand}" Margin="0,0,0,8"
+                                        IsEnabled="{Binding DumpsLoaded}" />
+                            </StackPanel>
+                            <TextBlock Text="Absturzabbilder (Minidumps)" Style="{StaticResource Text.H2}" />
+                        </DockPanel>
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,8"
+                                   Text="Windows speichert bei Bluescreens ein Abbild. ULTIMATE X liest den Fehlercode daraus; mit installiertem Microsoft-Debugger (Debugging Tools for Windows) wird zusätzlich der verursachende Treiber ermittelt." />
+                        <DataGrid ItemsSource="{Binding Dumps}" SelectedItem="{Binding SelectedDump}" MaxHeight="240"
+                                  Visibility="{Binding Dumps.Count, Converter={StaticResource NullToVis}}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Datei" Binding="{Binding File}" Width="160" />
+                                <DataGridTextColumn Header="Zeitpunkt" Binding="{Binding Date}" Width="150" />
+                                <DataGridTextColumn Header="Größe" Binding="{Binding Size}" Width="90" />
+                                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="100" />
+                                <DataGridTextColumn Header="Fehler" Binding="{Binding Name}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <ProgressBar IsIndeterminate="True" Height="3" Margin="0,8,0,0" Visibility="{Binding IsAnalyzing, Converter={StaticResource BoolToVis}}" />
+                        <ctl:ChamferBorder Style="{StaticResource Card.Inner}" Visibility="{Binding AnalysisResult, Converter={StaticResource NullToVis}}" Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock Text="{Binding AnalysisResult}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" />
+                                <Expander Header="Originalausgabe des Debuggers" Margin="0,8,0,0" Visibility="{Binding AnalysisRaw, Converter={StaticResource NullToVis}}">
+                                    <TextBox Text="{Binding AnalysisRaw, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource Font.Mono}" FontSize="11"
+                                             MaxHeight="300" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" TextWrapping="NoWrap" />
+                                </Expander>
+                            </StackPanel>
+                        </ctl:ChamferBorder>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Hardwarefehler -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Hardwarefehler (WHEA)" Style="{StaticResource Text.H2}" />
+                        <TextBlock Text="Keine Hardwarefehler gemeldet." Style="{StaticResource Text.Muted}"
+                                   Visibility="{Binding HardwareErrors.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                        <ItemsControl ItemsSource="{Binding HardwareErrors}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ctl:ChamferBorder Style="{StaticResource Card.Inner}">
+                                        <StackPanel>
+                                            <TextBlock FontWeight="SemiBold">
+                                                <Run Text="{Binding Kind, Mode=OneWay}" /> <Run Text="·" /> <Run Text="{Binding Count, Mode=OneWay}" /><Run Text="×" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Explanation}" Style="{StaticResource Text.MutedWrap}" />
+                                        </StackPanel>
+                                    </ctl:ChamferBorder>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- Programmabstürze -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="Programmabstürze und hängende Programme" Style="{StaticResource Text.H2}" />
+                        <DataGrid ItemsSource="{Binding AppCrashes}" MaxHeight="360">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Programm" Binding="{Binding Application}" Width="200" />
+                                <DataGridTextColumn Header="Art" Binding="{Binding Kind}" Width="80" />
+                                <DataGridTextColumn Header="Anzahl" Binding="{Binding Count}" Width="70" />
+                                <DataGridTextColumn Header="Zuletzt" Binding="{Binding Last}" Width="150" />
+                                <DataGridTextColumn Header="Modul" Binding="{Binding Module}" Width="*" />
+                                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="100" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

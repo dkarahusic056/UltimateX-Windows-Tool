@@ -1,0 +1,57 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35000.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{246F7E5C-5111-5FC8-8B51-42D32597C360}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{31D59739-4786-578A-AF40-9A687C741B46}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltimateX.Core", "src\UltimateX.Core\UltimateX.Core.csproj", "{17BE1ADB-783E-5BB3-9F2D-35ADC8DECD3C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltimateX.Services", "src\UltimateX.Services\UltimateX.Services.csproj", "{02FA688F-932E-507F-AC80-772C1BC07D29}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltimateX.AdminHelper", "src\UltimateX.AdminHelper\UltimateX.AdminHelper.csproj", "{B0527B1C-00FA-5F94-9476-F087E3565EA0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltimateX.App", "src\UltimateX.App\UltimateX.App.csproj", "{D62BBAFC-F70D-53E1-858D-27C30E10C056}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UltimateX.Core.Tests", "tests\UltimateX.Core.Tests\UltimateX.Core.Tests.csproj", "{401B3ED5-2062-5CD5-80F5-935B4C7E4480}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{17BE1ADB-783E-5BB3-9F2D-35ADC8DECD3C}.Debug|x64.ActiveCfg = Debug|x64
+		{17BE1ADB-783E-5BB3-9F2D-35ADC8DECD3C}.Debug|x64.Build.0 = Debug|x64
+		{17BE1ADB-783E-5BB3-9F2D-35ADC8DECD3C}.Release|x64.ActiveCfg = Release|x64
+		{17BE1ADB-783E-5BB3-9F2D-35ADC8DECD3C}.Release|x64.Build.0 = Release|x64
+		{02FA688F-932E-507F-AC80-772C1BC07D29}.Debug|x64.ActiveCfg = Debug|x64
+		{02FA688F-932E-507F-AC80-772C1BC07D29}.Debug|x64.Build.0 = Debug|x64
+		{02FA688F-932E-507F-AC80-772C1BC07D29}.Release|x64.ActiveCfg = Release|x64
+		{02FA688F-932E-507F-AC80-772C1BC07D29}.Release|x64.Build.0 = Release|x64
+		{B0527B1C-00FA-5F94-9476-F087E3565EA0}.Debug|x64.ActiveCfg = Debug|x64
+		{B0527B1C-00FA-5F94-9476-F087E3565EA0}.Debug|x64.Build.0 = Debug|x64
+		{B0527B1C-00FA-5F94-9476-F087E3565EA0}.Release|x64.ActiveCfg = Release|x64
+		{B0527B1C-00FA-5F94-9476-F087E3565EA0}.Release|x64.Build.0 = Release|x64
+		{D62BBAFC-F70D-53E1-858D-27C30E10C056}.Debug|x64.ActiveCfg = Debug|x64
+		{D62BBAFC-F70D-53E1-858D-27C30E10C056}.Debug|x64.Build.0 = Debug|x64
+		{D62BBAFC-F70D-53E1-858D-27C30E10C056}.Release|x64.ActiveCfg = Release|x64
+		{D62BBAFC-F70D-53E1-858D-27C30E10C056}.Release|x64.Build.0 = Release|x64
+		{401B3ED5-2062-5CD5-80F5-935B4C7E4480}.Debug|x64.ActiveCfg = Debug|x64
+		{401B3ED5-2062-5CD5-80F5-935B4C7E4480}.Debug|x64.Build.0 = Debug|x64
+		{401B3ED5-2062-5CD5-80F5-935B4C7E4480}.Release|x64.ActiveCfg = Release|x64
+		{401B3ED5-2062-5CD5-80F5-935B4C7E4480}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{17BE1ADB-783E-5BB3-9F2D-35ADC8DECD3C} = {246F7E5C-5111-5FC8-8B51-42D32597C360}
+		{02FA688F-932E-507F-AC80-772C1BC07D29} = {246F7E5C-5111-5FC8-8B51-42D32597C360}
+		{B0527B1C-00FA-5F94-9476-F087E3565EA0} = {246F7E5C-5111-5FC8-8B51-42D32597C360}
+		{D62BBAFC-F70D-53E1-858D-27C30E10C056} = {246F7E5C-5111-5FC8-8B51-42D32597C360}
+		{401B3ED5-2062-5CD5-80F5-935B4C7E4480} = {31D59739-4786-578A-AF40-9A687C741B46}
+	EndGlobalSection
+EndGlobal
