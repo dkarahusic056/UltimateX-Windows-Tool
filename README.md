@@ -45,7 +45,7 @@
 
 ## Installation
 
-`UltimateX-WindowsControl-<Version>-x64.msi` ausführen. Standardpfad: `C:\Program Files\ULTIMATE X Windows Control\`. Desktop-Verknüpfung optional, Upgrades werden erkannt, Deinstallation über Windows-Einstellungen. Die Bedienungsanleitung (`Bedienungsanleitung.pdf`, Quelle `docs/`) wird neben `UltimateX.exe` installiert und ist im Startmenü unter „ULTIMATE X Bedienungsanleitung“ erreichbar.
+`UltimateX-WindowsControl-<Version>-x64.msi` ausführen. Standardpfad: `C:\Program Files\ULTIMATE X Windows Control\`. Desktop-Verknüpfung optional, Upgrades werden erkannt, Deinstallation über Windows-Einstellungen. Die Bedienungsanleitung (`Bedienungsanleitung.pdf`, Quelle `docs/`) wird neben `UltimateX.exe` installiert und ist im Startmenü unter „ULTIMATE X Bedienungsanleitung“ erreichbar. Die englische Anleitung (`User_Manual_EN.pdf`, Quelle `docs/`) wird ebenfalls dort installiert und ist im Startmenü unter „ULTIMATE X User Manual (EN)“ erreichbar.
 
 ## Build
 
