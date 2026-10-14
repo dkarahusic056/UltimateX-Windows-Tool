@@ -143,6 +143,7 @@ if ($msiVersion -ne $Version) { throw "MSI-Prüfung: ProductVersion $msiVersion 
 if (-not $upgrade) { throw "MSI-Prüfung: UpgradeCode fehlt (Upgrades wären nicht möglich)" }
 function Require($name) { if ($fileNames -notcontains $name) { throw "MSI-Prüfung: $name fehlt" } }
 Require "UltimateX.exe"; Require "UltimateX.AdminHelper.exe"; Require "UltimateX.Core.dll"; Require "UltimateX.Services.dll"
+Require "Bedienungsanleitung.pdf"
 Require "coreclr.dll"; Require "hostfxr.dll"; Require "PresentationFramework.dll"   # self-contained: keine separate .NET-Installation
 $dev = $fileNames | Where-Object { $_ -like "*.pdb" -or $_ -like "*Tests*.dll" -or $_ -like "xunit*" -or $_ -like "Microsoft.TestPlatform*" }
 if ($dev) { throw ("MSI-Prüfung: Entwicklungsdateien enthalten: " + ($dev -join ", ")) }

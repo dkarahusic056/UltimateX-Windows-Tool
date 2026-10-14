@@ -50,6 +50,8 @@
     <Feature Id="Main" Title="ULTIMATE X Windows Control" Description="Anwendung und Startmenü-Verknüpfung." Level="1" AllowAbsent="no" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="AppFiles" />
       <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="ManualPdf" />
+      <ComponentRef Id="ManualStartMenuShortcut" />
       <ComponentRef Id="HelperRunsDir" />
       <ComponentRef Id="HelperRunsCleanup" />
       <Feature Id="DesktopShortcutFeature" Title="Desktop-Verknüpfung" Description="Verknüpfung auf dem Desktop erstellen." Level="1">
@@ -70,6 +72,17 @@
       </Shortcut>
       <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
       <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <!-- Bedienungsanleitung (PDF) neben der EXE; Quelle: docs\Bedienungsanleitung.pdf (relativ zu installer\) -->
+    <Component Id="ManualPdf" Directory="INSTALLFOLDER" Guid="802CD9A7-FD8C-43EF-B0D3-CA17821B6D56">
+      <File Id="ManualPdfFile" Source="..\docs\Bedienungsanleitung.pdf" Name="Bedienungsanleitung.pdf" KeyPath="yes" />
+    </Component>
+
+    <Component Id="ManualStartMenuShortcut" Directory="UltimateXMenuFolder" Guid="EB203084-8DF8-461B-894D-B8E53E354C48">
+      <Shortcut Id="StartMenuManual" Name="ULTIMATE X Bedienungsanleitung" Description="Bedienungsanleitung (PDF)"
+                Target="[#ManualPdfFile]" WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="ManualShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
     <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="0E6A4F1C-93B2-4C8D-A5E7-1D2F3B4C5A69">
