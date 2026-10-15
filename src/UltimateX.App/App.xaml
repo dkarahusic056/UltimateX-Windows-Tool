@@ -27,6 +27,11 @@
                 <ResourceDictionary Source="Views/SensorSourcesView.xaml" />
                 <ResourceDictionary Source="Views/ComponentTestView.xaml" />
                 <ResourceDictionary Source="Views/ReportView.xaml" />
+                <ResourceDictionary Source="Views/SuiteViews.xaml" />
+                <ResourceDictionary Source="Views/BackupViews.xaml" />
+                <ResourceDictionary Source="Views/NetSecViews.xaml" />
+                <ResourceDictionary Source="Views/SystemViews.xaml" />
+                <ResourceDictionary Source="Views/OverlayViews.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

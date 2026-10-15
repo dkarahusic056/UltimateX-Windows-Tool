@@ -6,6 +6,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>UltimateX.Services</RootNamespace>
+    <!-- v1.2: Direct3D-11-Compute (GPU-Benchmark) über COM-Funktionszeiger -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Management" />
@@ -13,6 +15,7 @@
     <PackageReference Include="System.Diagnostics.PerformanceCounter" />
     <PackageReference Include="Microsoft.Data.Sqlite.Core" />
     <PackageReference Include="SQLitePCLRaw.bundle_winsqlite3" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="UltimateX.Core.Tests" />

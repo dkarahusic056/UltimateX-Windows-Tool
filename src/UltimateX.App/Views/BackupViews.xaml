@@ -1,0 +1,476 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels"
+                    xmlns:ctl="clr-namespace:UltimateX.App.Controls"
+                    xmlns:infra="clr-namespace:UltimateX.App.Infrastructure">
+
+    <!-- v1.3 BACKUP-CENTER: Übersicht, System-Abbild, Datei-Backup-Profile, Wiederherstellen, Treiber, Rettungs-USB-Stick -->
+
+    <Style x:Key="Bk.SectionHeader" TargetType="TextBlock" BasedOn="{StaticResource Text.CardHeader}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.AccentHot}" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style x:Key="Bk.Label" TargetType="TextBlock" BasedOn="{StaticResource Text.Muted}">
+        <Setter Property="Margin" Value="0,8,0,4" />
+    </Style>
+
+    <DataTemplate x:Key="Bk.HistoryRowTemplate">
+        <Grid Margin="0,3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="130" />
+                <ColumnDefinition Width="110" />
+                <ColumnDefinition Width="180" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+            <TextBlock Grid.Column="1" Text="{Binding Time}" Style="{StaticResource Text.Muted}" />
+            <TextBlock Grid.Column="2" Text="{Binding Kind}" FontWeight="SemiBold" />
+            <TextBlock Grid.Column="3" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Target}" />
+            <StackPanel Grid.Column="4">
+                <TextBlock Text="{Binding Result}" Style="{StaticResource Text.Wrap}" />
+                <TextBlock Style="{StaticResource Text.Muted}" FontSize="11">
+                    <Run Text="{Binding Target, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Duration, Mode=OneWay}" />
+                </TextBlock>
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:BackupViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding ScheduledText, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding ScheduledText}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <TabControl Margin="0,0,0,12">
+                    <!-- ===================== ÜBERSICHT ===================== -->
+                    <TabItem Header="Übersicht">
+                        <StackPanel Margin="0,8,0,0">
+                            <WrapPanel>
+                                <ctl:ChamferBorder Style="{StaticResource Card}" Width="620" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="STATUS" Style="{StaticResource Bk.SectionHeader}" />
+                                        <ItemsControl ItemsSource="{Binding Overview}" ItemTemplate="{StaticResource InfoItemTemplate}" />
+                                        <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                                <ctl:ChamferBorder Style="{StaticResource Card}" Width="480" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="SO SIND SIE GESCHÜTZT" Style="{StaticResource Bk.SectionHeader}" />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                                   Text="1. System-Abbild: komplette Windows-Installation zurückspielen (nach Plattendefekt, Schadsoftware, missglücktem Update)." />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                                   Text="2. Datei-Backup mit Versionen: einzelne Dateien und Ordner von einem früheren Tag wiederholen." />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                                   Text="3. Rettungs-USB-Stick: startet einen PC, der nicht mehr hochfährt – zum Zurückspielen des Abbilds." />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,10"
+                                                   Text="Regel 3-2-1: drei Kopien, zwei verschiedene Datenträger, eine Kopie außer Haus. Backup-Platte nach der Sicherung abziehen (Schutz vor Verschlüsselungstrojanern)." />
+                                        <TextBlock Text="ZEITPLÄNE" Style="{StaticResource Bk.SectionHeader}" />
+                                        <TextBlock Text="{Binding SchedulerNote}" Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,10" />
+                                        <TextBlock Text="BITLOCKER TO GO" Style="{StaticResource Bk.SectionHeader}" />
+                                        <TextBlock Text="{Binding BitLockerNote}" Style="{StaticResource Text.MutedWrap}" />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                            </WrapPanel>
+                            <ctl:ChamferBorder Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="VERLAUF" Style="{StaticResource Bk.SectionHeader}" />
+                                    <TextBlock Text="Noch keine Sicherungen." Style="{StaticResource Text.Muted}"
+                                               Visibility="{Binding History.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                                    <ItemsControl ItemsSource="{Binding History}" ItemTemplate="{StaticResource Bk.HistoryRowTemplate}" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- ===================== DATEI-BACKUP ===================== -->
+                    <TabItem Header="Datei-Backup">
+                        <StackPanel Margin="0,8,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="300" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Profilliste -->
+                                <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="PROFILE" Style="{StaticResource Bk.SectionHeader}" />
+                                        <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfileRow}" Background="Transparent" BorderThickness="0" MinHeight="120">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,3">
+                                                        <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" Fill="{Binding State, Converter={StaticResource StateBrush}}" VerticalAlignment="Top" Margin="0,5,8,0" />
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                            <TextBlock Text="{Binding LastText}" Style="{StaticResource Text.Muted}" FontSize="11" />
+                                                            <TextBlock Text="{Binding ScheduleText}" Style="{StaticResource Text.Muted}" FontSize="11" />
+                                                            <TextBlock Text="{Binding TargetText}" Style="{StaticResource Text.MutedWrap}" FontSize="11" MaxWidth="230" />
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                        <WrapPanel Margin="0,8,0,0">
+                                            <Button Content="+ Neues Profil" Command="{Binding NewProfileCommand}" Margin="0,0,8,6" />
+                                            <Button Content="Import …" Command="{Binding ImportProfilesCommand}" Margin="0,0,8,6" />
+                                            <Button Content="Export …" Command="{Binding ExportProfilesCommand}" Margin="0,0,8,6" />
+                                        </WrapPanel>
+                                        <TextBlock Text="EINSTELLUNGEN" Style="{StaticResource Bk.SectionHeader}" Margin="0,14,0,6" />
+                                        <CheckBox Style="{StaticResource Switch}" Content="SHA-256 je Datei im Manifest speichern" IsChecked="{Binding StoreHashes}" Margin="0,0,0,8" />
+                                        <TextBlock Text="Warnen, wenn letzte Sicherung älter als (Tage)" Style="{StaticResource Text.MutedWrap}" />
+                                        <TextBox Text="{Binding OverdueDaysText, UpdateSourceTrigger=PropertyChanged}" Width="80" HorizontalAlignment="Left" Margin="0,4,0,8" />
+                                        <Button Content="Einstellungen speichern" Command="{Binding SaveSettingsCommand}" HorizontalAlignment="Left" />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+
+                                <!-- Editor -->
+                                <ctl:ChamferBorder Grid.Column="1" Style="{StaticResource Card}" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="PROFIL BEARBEITEN" Style="{StaticResource Bk.SectionHeader}" />
+                                        <TextBlock Text="Name" Style="{StaticResource Bk.Label}" Margin="0,0,0,4" />
+                                        <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}" MaxLength="60" Width="360" HorizontalAlignment="Left" />
+
+                                        <TextBlock Text="Ziel (externe Festplatte oder Ordner)" Style="{StaticResource Bk.Label}" />
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="Wählen …" Command="{Binding ChooseTargetCommand}" Margin="8,0,0,0" />
+                                            <TextBox Text="{Binding EditTarget, UpdateSourceTrigger=LostFocus}" />
+                                        </DockPanel>
+                                        <TextBlock Text="{Binding TargetHint}" Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,4,0,0"
+                                                   Visibility="{Binding TargetHint, Converter={StaticResource NullToVis}}" />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,2,0,0"
+                                                   Text="Ablage: Ziel\UltimateX-Backup\Profil\Datum_Uhrzeit\… – jede Version ist vollständig im Explorer durchsuchbar. Die Platte wird über UltimateX-Backup\target.json erkannt, auch unter anderem Laufwerksbuchstaben." />
+
+                                        <TextBlock Text="Vorlagen" Style="{StaticResource Bk.Label}" />
+                                        <ItemsControl ItemsSource="{Binding Templates}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked}" ToolTip="{Binding Description}" Width="200" Margin="0,0,8,6"
+                                                              IsEnabled="{Binding IsAvailable}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <TextBlock Text="Weitere Ordner/Dateien (hierher ziehen oder hinzufügen)" Style="{StaticResource Bk.Label}" />
+                                        <Border BorderBrush="{DynamicResource Brush.Border}" BorderThickness="1" Background="{DynamicResource Brush.Background}" Padding="6"
+                                                infra:FolderDropBehavior.DropCommand="{Binding AddDroppedCommand}" MinHeight="70">
+                                            <Grid>
+                                                <TextBlock Text="Ordner aus dem Explorer hierher ziehen" Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Visibility="{Binding ExtraSources.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                                                <ListBox ItemsSource="{Binding ExtraSources}" SelectedItem="{Binding SelectedExtraSource}" DisplayMemberPath="Path"
+                                                         Background="Transparent" BorderThickness="0" MaxHeight="160" />
+                                            </Grid>
+                                        </Border>
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <Button Content="Ordner hinzufügen …" Command="{Binding AddFolderCommand}" Margin="0,0,8,0" />
+                                            <Button Content="Entfernen" Command="{Binding RemoveSourceCommand}" />
+                                        </StackPanel>
+
+                                        <TextBlock Text="Ausschlüsse (ein Muster pro Zeile, z. B. node_modules, *.tmp, Cache\*)" Style="{StaticResource Bk.Label}" />
+                                        <TextBox Text="{Binding ExclusionsText, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" TextWrapping="NoWrap"
+                                                 MinHeight="80" MaxHeight="160" VerticalScrollBarVisibility="Auto" FontFamily="{StaticResource Font.Mono}" FontSize="12" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                            <Button Content="+ Vorlage „Programmierung“" Command="{Binding AddProgrammingExclusionsCommand}"
+                                                    ToolTip="bin, obj, node_modules, .vs, packages, *.tmp, Thumbs.db, ~$* – der Ordner .git bleibt erhalten" />
+                                        </StackPanel>
+
+                                        <TextBlock Text="Zeitplan" Style="{StaticResource Bk.Label}" />
+                                        <WrapPanel>
+                                            <ComboBox ItemsSource="{Binding ScheduleKinds}" SelectedItem="{Binding SelectedScheduleKind}" DisplayMemberPath="Label" Width="240" Margin="0,0,8,6" />
+                                            <ComboBox ItemsSource="{Binding Days}" SelectedItem="{Binding SelectedDay}" DisplayMemberPath="Label" Width="130" Margin="0,0,8,6"
+                                                      Visibility="{Binding ShowWeekday, Converter={StaticResource BoolToVis}}" />
+                                            <StackPanel Orientation="Horizontal" Visibility="{Binding ShowTime, Converter={StaticResource BoolToVis}}" Margin="0,0,8,6">
+                                                <TextBlock Text="Uhrzeit" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                <TextBox Text="{Binding ScheduleTime, UpdateSourceTrigger=PropertyChanged}" Width="70" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <TextBlock Text="Zeitpläne laufen nur, solange ULTIMATE X geöffnet ist (minimiert/Infobereich reicht)." Style="{StaticResource Text.MutedWrap}" FontSize="11" />
+
+                                        <WrapPanel Margin="0,8,0,0">
+                                            <StackPanel Margin="0,0,24,6">
+                                                <TextBlock Text="Aufbewahrung (Versionen)" Style="{StaticResource Text.Muted}" Margin="0,0,0,4" />
+                                                <TextBox Text="{Binding KeepVersionsText, UpdateSourceTrigger=PropertyChanged}" Width="80" HorizontalAlignment="Left" />
+                                            </StackPanel>
+                                            <StackPanel Margin="0,0,24,6" VerticalAlignment="Bottom">
+                                                <CheckBox Style="{StaticResource Switch}" Content="Änderungen zusätzlich per Hash erkennen (langsamer)" IsChecked="{Binding UseHashCompare}" Margin="0,0,0,6" />
+                                                <CheckBox Style="{StaticResource Switch}" Content="Profil aktiv" IsChecked="{Binding EditEnabled}" />
+                                            </StackPanel>
+                                        </WrapPanel>
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11"
+                                                   Text="Ältere Versionen über der Aufbewahrung werden nach einer erfolgreichen, geprüften Sicherung endgültig gelöscht – ausschließlich Versionsordner dieses Profils unterhalb von UltimateX-Backup. Ihre Originaldateien werden nie verändert." />
+
+                                        <WrapPanel Margin="0,12,0,0">
+                                            <Button Style="{StaticResource Button.Primary}" Content="Profil speichern" Command="{Binding SaveProfileCommand}" Margin="0,0,8,6" />
+                                            <Button Content="Jetzt sichern" Command="{Binding RunNowCommand}" Margin="0,0,8,6"
+                                                    IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" Visibility="{Binding IsEditingExisting, Converter={StaticResource BoolToVis}}" />
+                                            <Button Content="Backup-Ordner öffnen" Command="{Binding OpenTargetFolderCommand}" Margin="0,0,8,6"
+                                                    Visibility="{Binding IsEditingExisting, Converter={StaticResource BoolToVis}}" />
+                                            <Button Style="{StaticResource Button.Danger}" Content="Profil entfernen" Command="{Binding DeleteProfileCommand}" Margin="0,0,8,6"
+                                                    Visibility="{Binding IsEditingExisting, Converter={StaticResource BoolToVis}}" />
+                                        </WrapPanel>
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,4,0,0"
+                                                   Text="Geöffnete Dateien (z. B. Outlook-PST, laufender Browser) werden übersprungen und im Bericht aufgeführt – Schattenkopien (VSS) sind ohne Administratorrechte nicht möglich. Tipp: Outlook und Browser vor der Sicherung schließen." />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                            </Grid>
+
+                            <!-- Laufende Sicherung / Bericht -->
+                            <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding RunState, Converter={StaticResource StateBrush}}"
+                                               Visibility="{Binding RunPhase, Converter={StaticResource NullToVis}}">
+                                <StackPanel>
+                                    <TextBlock Text="SICHERUNG" Style="{StaticResource Bk.SectionHeader}" />
+                                    <TextBlock Text="{Binding RunPhase}" FontWeight="SemiBold" />
+                                    <ProgressBar Value="{Binding RunPercent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,6,0,6" />
+                                    <TextBlock Text="{Binding RunDetail}" Style="{StaticResource Text.MutedWrap}" FontSize="11" />
+                                    <Button Content="Abbrechen" Command="{Binding CancelRunCommand}" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                            Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}" />
+                                    <TextBlock Text="{Binding RunSummary}" Style="{StaticResource Text.Wrap}" Margin="0,8,0,0"
+                                               Visibility="{Binding RunSummary, Converter={StaticResource NullToVis}}" />
+                                    <TextBlock Text="ÜBERSPRUNGENE DATEIEN" Style="{StaticResource Bk.SectionHeader}" Margin="0,12,0,6"
+                                               Visibility="{Binding SkippedRows.Count, Converter={StaticResource NullToVis}}" />
+                                    <DataGrid ItemsSource="{Binding SkippedRows}" MaxHeight="260" Visibility="{Binding SkippedRows.Count, Converter={StaticResource NullToVis}}"
+                                              AutoGenerateColumns="False" IsReadOnly="True">
+                                        <DataGrid.Columns>
+                                            <DataGridTextColumn Header="Pfad" Binding="{Binding Path}" Width="2*" />
+                                            <DataGridTextColumn Header="Grund" Binding="{Binding Reason}" Width="*" />
+                                        </DataGrid.Columns>
+                                    </DataGrid>
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- ===================== WIEDERHERSTELLEN ===================== -->
+                    <TabItem Header="Wiederherstellen">
+                        <StackPanel Margin="0,8,0,0">
+                            <ctl:ChamferBorder Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="DATEIEN WIEDERHERSTELLEN" Style="{StaticResource Bk.SectionHeader}" />
+                                    <WrapPanel>
+                                        <StackPanel Margin="0,0,12,6">
+                                            <TextBlock Text="Profil" Style="{StaticResource Text.Muted}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding RestoreProfile}" DisplayMemberPath="Name" Width="240" />
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,12,6">
+                                            <TextBlock Text="Version" Style="{StaticResource Text.Muted}" Margin="0,0,0,4" />
+                                            <ComboBox ItemsSource="{Binding Versions}" SelectedItem="{Binding SelectedVersion}" DisplayMemberPath="Display" Width="380" />
+                                        </StackPanel>
+                                        <Button Content="Version im Explorer öffnen" Command="{Binding OpenVersionFolderCommand}" VerticalAlignment="Bottom" Margin="0,0,0,6" />
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding VersionsNote}" Style="{StaticResource Text.MutedWrap}" Visibility="{Binding VersionsNote, Converter={StaticResource NullToVis}}" Margin="0,0,0,6" />
+
+                                    <DockPanel Margin="0,6,0,6">
+                                        <Button DockPanel.Dock="Right" Content="Suchen" Command="{Binding SearchCommand}" Margin="8,0,0,0" />
+                                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Datei- oder Ordnernamen eingeben – leer zeigt die gesicherten Quellen">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+                                    </DockPanel>
+                                    <ListBox ItemsSource="{Binding RestoreItems}" SelectedItem="{Binding SelectedRestoreItem}" MaxHeight="320" Background="Transparent" BorderThickness="0">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="0,2">
+                                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Glyph}" FontFamily="{StaticResource Font.Icons}" Margin="0,2,8,0" />
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Modified}" Style="{StaticResource Text.Muted}" FontSize="11" Margin="12,0,0,0" />
+                                                    <TextBlock DockPanel.Dock="Right" Text="{Binding SizeText}" Style="{StaticResource Text.Muted}" FontSize="11" Margin="12,0,0,0" />
+                                                    <TextBlock Text="{Binding OriginalPath}" TextTrimming="CharacterEllipsis" ToolTip="{Binding OriginalPath}" />
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+
+                                    <TextBlock Text="Wiederherstellen nach" Style="{StaticResource Bk.Label}" Margin="0,12,0,4" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Style="{StaticResource Segment}" GroupName="BkRestoreDest" Content="Originalort" IsChecked="{Binding RestoreToOriginal}" />
+                                        <RadioButton Style="{StaticResource Segment}" GroupName="BkRestoreDest" Content="Anderer Ordner" IsChecked="{Binding RestoreToOriginal, Converter={StaticResource InvBool}}" />
+                                    </StackPanel>
+                                    <DockPanel Margin="0,6,0,0" Visibility="{Binding RestoreToOriginal, Converter={StaticResource InvBoolToVis}}">
+                                        <Button DockPanel.Dock="Right" Content="Wählen …" Command="{Binding ChooseRestoreFolderCommand}" Margin="8,0,0,0" />
+                                        <TextBox Text="{Binding RestoreFolder, UpdateSourceTrigger=PropertyChanged}" />
+                                    </DockPanel>
+                                    <TextBlock Text="Wenn die Datei am Ziel schon existiert" Style="{StaticResource Bk.Label}" />
+                                    <ComboBox ItemsSource="{Binding ConflictModes}" SelectedItem="{Binding SelectedConflictMode}" DisplayMemberPath="Label" Width="380" HorizontalAlignment="Left" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                        <Button Style="{StaticResource Button.Primary}" Content="Wiederherstellen …" Command="{Binding RestoreCommand}"
+                                                IsEnabled="{Binding IsRestoring, Converter={StaticResource InvBool}}" Margin="0,0,8,0" />
+                                        <Button Content="Abbrechen" Command="{Binding CancelRunCommand}" Visibility="{Binding IsRestoring, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding RestoreSummary}" Style="{StaticResource Text.Wrap}" Margin="0,8,0,0" Visibility="{Binding RestoreSummary, Converter={StaticResource NullToVis}}" />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,8,0,0"
+                                               Text="Vor dem Wiederherstellen zeigt ULTIMATE X an, wie viele Dateien betroffen sind und wie viele bereits existieren. Vorhandene Dateien werden nie stumm überschrieben. Geschützte Systemordner sind als Ziel gesperrt." />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- ===================== SYSTEM-ABBILD ===================== -->
+                    <TabItem Header="System-Abbild">
+                        <StackPanel Margin="0,8,0,0">
+                            <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding ImageVerdictState, Converter={StaticResource StateBrush}}">
+                                <StackPanel>
+                                    <TextBlock Text="SYSTEM-ABBILD ERSTELLEN (WINDOWS-BORDMITTEL)" Style="{StaticResource Bk.SectionHeader}" />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,8"
+                                               Text="Sichert Windows, Programme, Einstellungen und Dateien des Systemlaufwerks samt Start-Partitionen (wbadmin, Windows-Sicherung). Ziel: externe NTFS-Festplatte mit mindestens dem belegten Platz des Systemlaufwerks + 10 % frei." />
+                                    <WrapPanel>
+                                        <ComboBox ItemsSource="{Binding ImageDrives}" SelectedItem="{Binding SelectedImageDrive}" DisplayMemberPath="Display" Width="420" Margin="0,0,8,6" />
+                                        <Button Content="Aktualisieren" Command="{Binding RefreshDrivesCommand}" Margin="0,0,8,6" />
+                                    </WrapPanel>
+                                    <DockPanel Margin="0,0,0,8" Visibility="{Binding ImageVerdict, Converter={StaticResource NullToVis}}">
+                                        <Ellipse DockPanel.Dock="Left" Style="{StaticResource StatusDot}" Fill="{Binding ImageVerdictState, Converter={StaticResource StateBrush}}" />
+                                        <TextBlock Text="{Binding ImageVerdict}" Style="{StaticResource Text.Wrap}" />
+                                    </DockPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource Button.Primary}" Content="Abbild erstellen …" Command="{Binding CreateImageCommand}"
+                                                IsEnabled="{Binding ImageRunning, Converter={StaticResource InvBool}}" Margin="0,0,8,0" />
+                                        <Button Content="Anzeige beenden" Command="{Binding CancelImageCommand}" Visibility="{Binding ImageRunning, Converter={StaticResource BoolToVis}}"
+                                                ToolTip="wbadmin läuft mit Administratorrechten im Hintergrund weiter" />
+                                    </StackPanel>
+                                    <StackPanel Visibility="{Binding ImagePhase, Converter={StaticResource NullToVis}}" Margin="0,10,0,0">
+                                        <TextBlock Text="{Binding ImagePhase}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <ProgressBar Value="{Binding ImagePercent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,8,0,0"
+                                               Text="Hinweise: Der Fortschritt gilt je Volume (EFI, System, Wiederherstellung). „Anzeige beenden“ stoppt wbadmin nicht. Windows behält auf einer Platte je PC in der Regel nur das neueste Abbild zuverlässig." />
+                                    <TextBox Text="{Binding ImageOutput, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource Font.Mono}" FontSize="11" MaxHeight="220" Margin="0,8,0,0"
+                                             VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" Visibility="{Binding ImageOutput, Converter={StaticResource NullToVis}}" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+
+                            <WrapPanel>
+                                <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="VORHANDENE ABBILDER" Style="{StaticResource Bk.SectionHeader}" />
+                                        <WrapPanel>
+                                            <Button Content="Abbilder anzeigen (wbadmin)" Command="{Binding ShowImageVersionsCommand}" Margin="0,0,8,6" />
+                                            <Button Content="VHDX-Dateien suchen" Command="{Binding FindImagesCommand}" Margin="0,0,8,6" />
+                                            <Button Content="Abbild-Ordner im Explorer" Command="{Binding OpenImageFolderCommand}" Margin="0,0,8,6" />
+                                        </WrapPanel>
+                                        <TextBlock Text="{Binding ImageFilesNote}" Style="{StaticResource Text.MutedWrap}" Visibility="{Binding ImageFilesNote, Converter={StaticResource NullToVis}}" />
+                                        <ItemsControl ItemsSource="{Binding ImageFiles}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,4">
+                                                        <Button DockPanel.Dock="Right" Content="Durchsuchen …"
+                                                                Command="{Binding DataContext.OpenImageFileCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}" />
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Muted}" FontSize="11" />
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,6,0,0"
+                                                   Text="Durchsuchen: Windows bindet die VHDX beschreibbar als Laufwerk ein. Nur Dateien herauskopieren, nichts ändern – danach im Explorer „Auswerfen“." />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                                <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="ABBILD ZURÜCKSPIELEN – SCHRITT FÜR SCHRITT" Style="{StaticResource Bk.SectionHeader}" />
+                                        <ItemsControl ItemsSource="{Binding RestoreGuide}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" Style="{StaticResource Text.Wrap}" Margin="0,0,0,6" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Button Content="Erweiterter Start …" Command="{Binding AdvancedStartupCommand}" HorizontalAlignment="Left" Margin="0,6,0,0" />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                            </WrapPanel>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- ===================== TREIBER ===================== -->
+                    <TabItem Header="Treiber sichern">
+                        <StackPanel Margin="0,8,0,0">
+                            <ctl:ChamferBorder Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="TREIBER SICHERN" Style="{StaticResource Bk.SectionHeader}" />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,8"
+                                               Text="Kopiert alle installierten Treiberpakete (pnputil /export-driver) in einen festen Ordner: Laufwerk:\UltimateX-Backup\Treiber\Datum-Uhrzeit. Praktisch nach einer Neuinstallation von Windows oder für Geräte ohne Hersteller-Download." />
+                                    <WrapPanel>
+                                        <ComboBox ItemsSource="{Binding LocalDrives}" SelectedItem="{Binding SelectedDriverDrive}" DisplayMemberPath="Display" Width="420" Margin="0,0,8,6" />
+                                        <Button Style="{StaticResource Button.Primary}" Content="Treiber sichern …" Command="{Binding ExportDriversCommand}"
+                                                IsEnabled="{Binding DriverRunning, Converter={StaticResource InvBool}}" Margin="0,0,8,6" />
+                                    </WrapPanel>
+                                    <TextBlock Text="{Binding DriverSummary}" Style="{StaticResource Text.Wrap}" Visibility="{Binding DriverSummary, Converter={StaticResource NullToVis}}" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                            <WrapPanel>
+                                <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="GESICHERTE TREIBER" Style="{StaticResource Bk.SectionHeader}" />
+                                        <TextBlock Text="Noch nichts angezeigt – Sicherung starten oder eine vorhandene öffnen." Style="{StaticResource Text.Muted}"
+                                                   Visibility="{Binding ExportedDrivers.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                                        <DataGrid ItemsSource="{Binding ExportedDrivers}" MaxHeight="320" AutoGenerateColumns="False" IsReadOnly="True"
+                                                  Visibility="{Binding ExportedDrivers.Count, Converter={StaticResource NullToVis}}">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Paket" Binding="{Binding Package}" Width="*" />
+                                                <DataGridTextColumn Header="INF" Binding="{Binding InfName}" Width="140" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                        <TextBlock Text="VORHANDENE SICHERUNGEN AUF DIESEM LAUFWERK" Style="{StaticResource Bk.SectionHeader}" Margin="0,12,0,6" />
+                                        <ItemsControl ItemsSource="{Binding DriverBackups}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <DockPanel Margin="0,2">
+                                                        <Button DockPanel.Dock="Right" Content="Öffnen"
+                                                                Command="{Binding DataContext.OpenDriverFolderCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                                CommandParameter="{Binding}" />
+                                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                                    </DockPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                                <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                                    <StackPanel>
+                                        <TextBlock Text="ZURÜCKSPIELEN (ANLEITUNG)" Style="{StaticResource Bk.SectionHeader}" />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                                   Text="ULTIMATE X spielt Treiber nie automatisch zurück. So geht es von Hand:" />
+                                        <TextBox Text="{Binding DriverInstructions, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" FontSize="12"
+                                                 Visibility="{Binding DriverInstructions, Converter={StaticResource NullToVis}}" />
+                                        <TextBlock Style="{StaticResource Text.Wrap}" Visibility="{Binding DriverInstructions, Converter={StaticResource NullToVis}, ConverterParameter=invert}"
+                                                   Text="Administrator-Terminal öffnen und ausführen: pnputil /add-driver &quot;Ordner\*.inf&quot; /subdirs /install – danach neu starten." />
+                                    </StackPanel>
+                                </ctl:ChamferBorder>
+                            </WrapPanel>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- ===================== RETTUNGS-USB-STICK ===================== -->
+                    <TabItem Header="Rettungs-USB-Stick">
+                        <StackPanel Margin="0,8,0,0">
+                            <ctl:ChamferBorder Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="WIEDERHERSTELLUNGSLAUFWERK ERSTELLEN" Style="{StaticResource Bk.SectionHeader}" />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                               Text="Ein Rettungs-USB-Stick startet einen PC, der nicht mehr hochfährt, direkt in die Windows-Wiederherstellung. Von dort lässt sich das System-Abbild zurückspielen (Problembehandlung → Erweiterte Optionen → Systemimage-Wiederherstellung)." />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                               Text="• USB-Stick mit mindestens 16 GB (mit Option „Systemdateien sichern“: 32 GB) – alle Daten darauf werden gelöscht." />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,6"
+                                               Text="• Der Stick passt zur installierten Windows-Version und Architektur. Nach großen Funktionsupdates neu erstellen." />
+                                    <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,10"
+                                               Text="• Starten vom Stick: beim Einschalten Boot-Menü-Taste (oft F12, F8, F11 oder Esc) drücken und den Stick wählen." />
+                                    <Button Style="{StaticResource Button.Primary}" Content="Windows-Assistent starten …" Command="{Binding RecoveryDriveCommand}" HorizontalAlignment="Left" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

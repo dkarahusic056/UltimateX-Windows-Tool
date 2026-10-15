@@ -4,7 +4,18 @@
                     xmlns:ctl="clr-namespace:UltimateX.App.Controls">
 
     <DataTemplate DataType="{x:Type vm:SpeedtestViewModel}">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- v1.3: Umschalter eigener Test / speedtest.ch (eingebettet). Getrennte Bereiche statt ScrollViewer um das
+                 WebView2-Fenster (natives Fenster – würde beim Scrollen über anderen Inhalten liegen). -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <RadioButton Style="{StaticResource Segment}" GroupName="SpeedtestMode" Content="Eigener Speedtest (Cloudflare)" IsChecked="{Binding ShowOwnTest}" />
+                <RadioButton Style="{StaticResource Segment}" GroupName="SpeedtestMode" Content="speedtest.ch (eingebettet)" IsChecked="{Binding ShowSpeedtestCh}" />
+            </StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="{Binding ShowOwnTest, Converter={StaticResource BoolToVis}}">
             <StackPanel Margin="0,0,0,24">
                 <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
                     <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
@@ -38,10 +49,10 @@
                                 <StackPanel Margin="0,0,0,14"><TextBlock Text="Download" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding LastDownload}" Style="{StaticResource Text.Value}" /></StackPanel>
                                 <StackPanel Margin="0,0,0,14"><TextBlock Text="Upload" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding LastUpload}" Style="{StaticResource Text.Value}" /></StackPanel>
                                 <StackPanel><TextBlock Text="Ping" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding LastResult.PingMs, StringFormat='{}{0:0} ms'}" Style="{StaticResource Text.Value}" /></StackPanel>
-                                <StackPanel><TextBlock Text="Jitter" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding LastResult.JitterMs, StringFormat='{}{0:0.0} ms'}" Style="{StaticResource Text.Value}" /></StackPanel>
+                                <StackPanel><TextBlock Text="Jitter" Style="{StaticResource Text.Muted}" /><TextBlock Text="{Binding LastJitter}" Style="{StaticResource Text.Value}" /></StackPanel>
                             </UniformGrid>
                             <TextBlock Margin="0,12,0,0" Text="{Binding LastResult.PacketLossPercent, StringFormat='Paketverlust: {0:0} %', TargetNullValue='Paketverlust: nicht messbar (ICMP blockiert?)'}" />
-                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Muted}" Text="{Binding LastResult.Server, StringFormat='Server: {0} (HTTPS)'}" />
+                            <TextBlock Margin="0,4,0,0" Style="{StaticResource Text.Muted}" Text="{Binding LastResult.Server, StringFormat='Quelle: {0} (HTTPS)'}" />
                         </StackPanel>
                     </ctl:ChamferBorder>
 
@@ -65,9 +76,47 @@
                         <DataGridTextColumn Header="Upload" Binding="{Binding Upload}" Width="130" />
                         <DataGridTextColumn Header="Ping" Binding="{Binding Ping}" Width="90" />
                         <DataGridTextColumn Header="Jitter" Binding="{Binding Jitter}" Width="90" />
+                        <DataGridTextColumn Header="Quelle" Binding="{Binding Source}" Width="230" />
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>
         </ScrollViewer>
+
+            <!-- ===================== speedtest.ch (eingebettet, v1.3) ===================== -->
+            <Grid Grid.Row="1" Visibility="{Binding ShowSpeedtestCh, Converter={StaticResource BoolToVis}}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="300" />
+                </Grid.ColumnDefinitions>
+                <ctl:SpeedtestChBrowser IsActive="{Binding ShowSpeedtestCh}" Margin="0,0,12,12" />
+                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,0,8,12">
+                        <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                        </ctl:ChamferBorder>
+                        <ctl:ChamferBorder Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Ergebnis übernehmen" Style="{StaticResource Text.H2}" />
+                                <TextBlock Style="{StaticResource Text.MutedWrap}" Margin="0,0,0,10"
+                                           Text="Werte nach dem Test von speedtest.ch abtippen. ULTIMATE X liest die Webseite nicht aus." />
+                                <TextBlock Text="Download (Mbit/s)" Style="{StaticResource Text.Muted}" />
+                                <TextBox Text="{Binding ManualDownload, UpdateSourceTrigger=PropertyChanged}" MaxLength="12" Margin="0,2,0,8" />
+                                <TextBlock Text="Upload (Mbit/s)" Style="{StaticResource Text.Muted}" />
+                                <TextBox Text="{Binding ManualUpload, UpdateSourceTrigger=PropertyChanged}" MaxLength="12" Margin="0,2,0,8" />
+                                <TextBlock Text="Ping (ms)" Style="{StaticResource Text.Muted}" />
+                                <TextBox Text="{Binding ManualPing, UpdateSourceTrigger=PropertyChanged}" MaxLength="12" Margin="0,2,0,8" />
+                                <TextBlock Text="Jitter (ms, optional)" Style="{StaticResource Text.Muted}" />
+                                <TextBox Text="{Binding ManualJitter, UpdateSourceTrigger=PropertyChanged}" MaxLength="12" Margin="0,2,0,8" />
+                                <TextBlock Text="{Binding ManualError}" Foreground="{DynamicResource Brush.Problem}" Style="{StaticResource Text.Wrap}" Margin="0,0,0,8"
+                                           Visibility="{Binding ManualError, Converter={StaticResource NullToVis}}" />
+                                <Button Style="{StaticResource Button.Primary}" Content="Übernehmen" Command="{Binding ApplyManualCommand}" HorizontalAlignment="Left" Padding="18,8" />
+                                <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,10,0,0"
+                                           Text="Der Eintrag erscheint im Verlauf mit der Quelle „speedtest.ch (manuell)“. Der eigene Speedtest (Cloudflare) bleibt unverändert verfügbar." />
+                            </StackPanel>
+                        </ctl:ChamferBorder>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
     </DataTemplate>
 </ResourceDictionary>

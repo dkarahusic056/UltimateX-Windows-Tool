@@ -9,6 +9,20 @@
                     <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
                 </ctl:ChamferBorder>
 
+                <!-- WINDOWS HEALTH SCORE (v1.2 §36) -->
+                <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding WindowsScoreState, Converter={StaticResource StateBrush}}" MaxWidth="1136" HorizontalAlignment="Left">
+                    <Expander IsExpanded="False">
+                        <Expander.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="WINDOWS HEALTH SCORE" Style="{StaticResource Text.CardHeader}" Foreground="{DynamicResource Brush.AccentHot}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding WindowsScore}" Style="{StaticResource Text.Display}" FontSize="24" Margin="16,0,0,0"
+                                           Foreground="{Binding WindowsScoreState, Converter={StaticResource StateBrush}}" />
+                            </StackPanel>
+                        </Expander.Header>
+                        <ItemsControl ItemsSource="{Binding ScoreFindings}" ItemTemplate="{StaticResource FindingTemplate}" Margin="0,10,0,0" />
+                    </Expander>
+                </ctl:ChamferBorder>
+
                 <WrapPanel>
                     <!-- Reparatur-Werkzeuge (§40–§43, §48) -->
                     <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">

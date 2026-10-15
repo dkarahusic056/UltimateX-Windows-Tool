@@ -6,6 +6,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
+    <!-- v1.3: nur für das Symbol im Infobereich (System.Windows.Forms.NotifyIcon); WinForms-Namespaces werden NICHT global eingebunden. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <RootNamespace>UltimateX.App</RootNamespace>
     <AssemblyName>UltimateX</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -19,9 +21,12 @@
     <!-- WPF-Projekte lassen System.IO / System.Net.Http aus den impliziten usings weg (Konflikt mit Shapes.Path); hier bewusst ergänzt. -->
     <Using Include="System.IO" />
     <Using Include="System.Net.Http" />
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\UltimateX.Core\UltimateX.Core.csproj" />
@@ -32,5 +37,8 @@
   <ItemGroup>
     <Resource Include="Assets\ultimatex.ico" />
     <Resource Include="Assets\ultimatex.png" />
+    <Resource Include="Assets\background.jpg" />
+    <Resource Include="Assets\logo-full.jpg" />
+    <Content Include="Docs\*.pdf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

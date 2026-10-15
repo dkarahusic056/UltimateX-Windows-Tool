@@ -1,0 +1,40 @@
+<Window x:Class="UltimateX.App.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ULTIMATE X Overlay"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Focusable="False"
+        IsHitTestVisible="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        Left="-10000" Top="-10000"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display">
+    <!-- Ohne DropShadowEffect: Effekte werden in transparenten (Layered-)Fenstern in Software gerendert und ließen das Overlay flackern.
+         Lesbarkeit kommt vom halbtransparenten Hintergrund. -->
+    <!-- v1.3 In-Game-Overlay: randlos, transparent, durchklickbar (erweiterte Fensterstile im Code-Behind). Feste Farben,
+         damit die Werte unabhängig vom App-Farbschema auf jedem Spielbild lesbar bleiben. -->
+    <Border x:Name="OverlayPanel" CornerRadius="3" Padding="10,6,12,7" Background="#8C000000">
+        <ItemsControl x:Name="Lines" Grid.IsSharedSizeScope="True" Focusable="False" VirtualizingPanel.IsVirtualizing="False">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="OverlayLabel" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Label}" Foreground="#FFFF5050" Margin="0,0,14,0" FontFamily="Bahnschrift, Segoe UI" />
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" Foreground="White" FontWeight="SemiBold" FontFamily="Bahnschrift, Segoe UI"
+                                   Typography.NumeralAlignment="Tabular" />
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Border>
+</Window>

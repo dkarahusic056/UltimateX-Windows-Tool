@@ -1,0 +1,301 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels"
+                    xmlns:ctl="clr-namespace:UltimateX.App.Controls">
+
+    <!-- v1.3: Seite „Overlay“ – In-Game-Overlay, FPS-Messung, Sitzungsaufzeichnung, Hintergrundüberwachung (Infobereich). -->
+
+    <Style x:Key="Overlay.Section" TargetType="TextBlock" BasedOn="{StaticResource Text.CardHeader}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.AccentHot}" />
+        <Setter Property="Margin" Value="0,0,0,10" />
+    </Style>
+
+    <Style x:Key="Overlay.Label" TargetType="TextBlock" BasedOn="{StaticResource Text.Muted}">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,4,12,4" />
+    </Style>
+
+    <Style x:Key="Overlay.Number" TargetType="TextBox">
+        <Setter Property="Width" Value="70" />
+        <Setter Property="Margin" Value="6,2,12,2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalContentAlignment" Value="Right" />
+    </Style>
+
+    <DataTemplate DataType="{x:Type vm:OverlayViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <!-- ===================== OVERLAY: STATUS + VORSCHAU ===================== -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="IN-GAME-OVERLAY" Style="{StaticResource Overlay.Section}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Ellipse Style="{StaticResource StatusDot}" Fill="{DynamicResource Brush.Ok}" Margin="0,0,8,0"
+                                         Visibility="{Binding OverlayVisible, Converter={StaticResource BoolToVis}}" />
+                                <TextBlock Text="Overlay ist eingeblendet" Visibility="{Binding OverlayVisible, Converter={StaticResource BoolToVis}}" FontWeight="SemiBold" />
+                                <TextBlock Text="Overlay ist ausgeblendet" Visibility="{Binding OverlayVisible, Converter={StaticResource InvBoolToVis}}" Style="{StaticResource Text.Muted}" />
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" MaxWidth="620" HorizontalAlignment="Left"
+                                       Text="Das Overlay liegt durchklickbar über Spielen und zeigt nur Werte, für die eine Messquelle vorhanden ist. Ein-/Ausblenden jederzeit mit dem Tastenkürzel. Spiele im exklusiven Vollbildmodus zeigen kein Overlay – im Spiel „Randloses Fenster“ bzw. „Vollbild (Fenster)“ wählen." />
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <Button Style="{StaticResource Button.Primary}" Content="Overlay ein/aus" Command="{Binding ToggleOverlayCommand}" Padding="18,8" />
+                                <TextBlock Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="14,0,0,0"
+                                           Text="{Binding Hotkey, StringFormat='Tastenkürzel: {0}'}" />
+                            </StackPanel>
+
+                            <!-- FPS-Status -->
+                            <TextBlock Text="{Binding FpsStatus}" Style="{StaticResource Text.Wrap}" Margin="0,14,0,0" MaxWidth="620" HorizontalAlignment="Left" />
+                            <ctl:ChamferBorder Style="{StaticResource Card.Notice}" Margin="0,10,0,0" MaxWidth="640" HorizontalAlignment="Left"
+                                               Visibility="{Binding FpsNoPermission, Converter={StaticResource BoolToVis}}">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource Text.Wrap}"
+                                               Text="FPS, Frametime und 1 % Low benötigen Administratorrechte oder die Mitgliedschaft in der Windows-Gruppe „Leistungsprotokollbenutzer“. ULTIMATE X ändert Ihr Konto nicht selbst." />
+                                    <Button Content="Anleitung anzeigen" Command="{Binding ShowFpsHelpCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                                </StackPanel>
+                            </ctl:ChamferBorder>
+                        </StackPanel>
+
+                        <!-- Vorschau (gleiche Optik wie das Overlay-Fenster) -->
+                        <StackPanel Grid.Column="1" Margin="24,0,0,0" MinWidth="220">
+                            <TextBlock Text="VORSCHAU (LIVE)" Style="{StaticResource Text.CardHeader}" Margin="0,0,0,8" />
+                            <Border Background="#E0101010" CornerRadius="3" Padding="10,6,12,7" HorizontalAlignment="Left" MinWidth="160">
+                                <Grid>
+                                    <ItemsControl ItemsSource="{Binding PreviewLines}" Grid.IsSharedSizeScope="True" TextElement.FontSize="{Binding FontSize}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" SharedSizeGroup="PreviewLabel" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Label}" Foreground="#FFFF5050" Margin="0,0,14,0" FontFamily="Bahnschrift, Segoe UI" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Value}" Foreground="White" FontWeight="SemiBold" FontFamily="Bahnschrift, Segoe UI" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="Keine Werte mit Messquelle" Foreground="#FFB0B0B0" FontSize="12"
+                                               Visibility="{Binding PreviewLines.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                                </Grid>
+                            </Border>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,6,0,0" MaxWidth="260" HorizontalAlignment="Left"
+                                       Text="FPS beziehen sich auf das Programm im Vordergrund – hier also auf ULTIMATE X selbst nicht." />
+                        </StackPanel>
+                    </Grid>
+                </ctl:ChamferBorder>
+
+                <!-- ===================== OVERLAY: EINSTELLUNGEN ===================== -->
+                <WrapPanel>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="420" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="ANGEZEIGTE WERTE" Style="{StaticResource Overlay.Section}" />
+                            <ItemsControl ItemsSource="{Binding Elements}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox Content="{Binding Label}" IsChecked="{Binding IsChecked}" Margin="0,3" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,8,0,0"
+                                       Text="Takt- und Leistungswerte liefern nur Sensorquellen wie HWiNFO oder LibreHardwareMonitor (siehe Sensorquellen). Fehlt die Quelle, wird die Zeile ausgeblendet." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="460" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="DARSTELLUNG &amp; POSITION" Style="{StaticResource Overlay.Section}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="140" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Monitor" Style="{StaticResource Overlay.Label}" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding Monitors}" SelectedItem="{Binding SelectedMonitor}" DisplayMemberPath="Label" Margin="0,3" />
+                                <TextBlock Grid.Row="1" Text="Ecke" Style="{StaticResource Overlay.Label}" />
+                                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Corners}" SelectedItem="{Binding SelectedCorner}" DisplayMemberPath="Label" Margin="0,3" />
+                                <TextBlock Grid.Row="2" Text="Schriftgröße" Style="{StaticResource Overlay.Label}" />
+                                <DockPanel Grid.Row="2" Grid.Column="1">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding FontSize, StringFormat='{}{0:0} pt'}" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
+                                    <Slider Minimum="9" Maximum="40" Value="{Binding FontSize}" IsSnapToTickEnabled="True" TickFrequency="1" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <TextBlock Grid.Row="3" Text="Deckkraft" Style="{StaticResource Overlay.Label}" />
+                                <DockPanel Grid.Row="3" Grid.Column="1">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding OpacityPercent, StringFormat='{}{0:0} %'}" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
+                                    <Slider Minimum="30" Maximum="100" Value="{Binding OpacityPercent}" IsSnapToTickEnabled="True" TickFrequency="5" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <TextBlock Grid.Row="4" Text="Hintergrund" Style="{StaticResource Overlay.Label}" />
+                                <DockPanel Grid.Row="4" Grid.Column="1">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding BackgroundPercent, StringFormat='{}{0:0} %'}" Width="50" TextAlignment="Right" VerticalAlignment="Center" />
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding BackgroundPercent}" IsSnapToTickEnabled="True" TickFrequency="5" VerticalAlignment="Center" />
+                                </DockPanel>
+                                <TextBlock Grid.Row="5" Text="Ping-Ziel" Style="{StaticResource Overlay.Label}" />
+                                <ComboBox Grid.Row="5" Grid.Column="1" ItemsSource="{Binding PingTargets}" SelectedItem="{Binding SelectedPingTarget}" DisplayMemberPath="Label" Margin="0,3" />
+                                <TextBlock Grid.Row="6" Text="Tastenkürzel" Style="{StaticResource Overlay.Label}" />
+                                <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Hotkey, UpdateSourceTrigger=PropertyChanged}" Margin="0,3" MaxLength="40" />
+                                <CheckBox Grid.Row="7" Grid.ColumnSpan="2" Style="{StaticResource Switch}" Content="Overlay beim Programmstart einblenden" IsChecked="{Binding ShowOnStartup}" Margin="0,8,0,0" />
+                            </Grid>
+                            <TextBlock Text="{Binding HotkeyError}" Foreground="{DynamicResource Brush.Problem}" Style="{StaticResource Text.Wrap}" Margin="0,6,0,0"
+                                       Visibility="{Binding HotkeyError, Converter={StaticResource NullToVis}}" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,6,0,0"
+                                       Text="Beispiele: Strg+Umschalt+O, Alt+F10, Strg+Alt+P. Mindestens Strg, Alt oder Win plus eine Taste." />
+                            <Button Style="{StaticResource Button.Primary}" Content="Übernehmen" Command="{Binding ApplyOverlayCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" Padding="18,8" />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="380" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="PROFILE" Style="{StaticResource Overlay.Section}" />
+                            <TextBlock Text="Gespeicherte Profile" Style="{StaticResource Text.Muted}" />
+                            <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" Margin="0,4,0,8" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Profil laden" Command="{Binding LoadProfileCommand}" Margin="0,0,8,0" />
+                                <Button Content="Profil löschen" Command="{Binding DeleteProfileCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="Aktuelle Darstellung speichern als" Style="{StaticResource Text.Muted}" Margin="0,14,0,4" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Speichern" Command="{Binding SaveProfileCommand}" Margin="8,0,0,0" />
+                                <TextBox Text="{Binding NewProfileName, UpdateSourceTrigger=PropertyChanged}" MaxLength="40" />
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,8,0,0"
+                                       Text="Ein Profil enthält Werte, Ecke, Schriftgröße und Transparenz – z. B. „Minimal“ nur mit FPS oder „Diagnose“ mit allen Werten." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </WrapPanel>
+
+                <!-- ===================== SITZUNGSAUFZEICHNUNG ===================== -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="SPIEL-SITZUNG AUFZEICHNEN" Style="{StaticResource Overlay.Section}" />
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" MaxWidth="760" HorizontalAlignment="Left"
+                                   Text="Schreibt jede Sekunde FPS, Frametime, 1 % Low, Auslastung und Temperaturen in eine CSV-Datei. Danach lässt sich der Verlauf hier als Diagramm ansehen. Leere Felder bedeuten: kein Messwert." />
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Style="{StaticResource Button.Primary}" Content="Aufzeichnung starten" Command="{Binding ToggleRecordingCommand}" Padding="18,8"
+                                    Visibility="{Binding IsRecording, Converter={StaticResource InvBoolToVis}}" />
+                            <Button Style="{StaticResource Button.Danger}" Content="Aufzeichnung beenden" Command="{Binding ToggleRecordingCommand}" Padding="18,8"
+                                    Visibility="{Binding IsRecording, Converter={StaticResource BoolToVis}}" />
+                            <Button Content="Liste aktualisieren" Command="{Binding RefreshSessionsCommand}" Margin="8,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding RecordingFile, StringFormat='Aufzeichnung läuft: {0}'}" Style="{StaticResource Text.Wrap}" Margin="0,8,0,0"
+                                   Visibility="{Binding RecordingFile, Converter={StaticResource NullToVis}}" />
+                        <TextBlock Text="{Binding SessionDirectory, StringFormat='Speicherort: {0}'}" Style="{StaticResource Text.Muted}" Margin="0,6,0,0" TextWrapping="Wrap" />
+
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="300" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ListBox ItemsSource="{Binding Sessions}" SelectedItem="{Binding SelectedSession}" MaxHeight="260" Background="Transparent" BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,2,0,4">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Info}" Style="{StaticResource Text.Muted}" FontSize="11" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <StackPanel Grid.Column="1" Margin="16,0,0,0" Visibility="{Binding SessionSummary, Converter={StaticResource NullToVis}}">
+                                <TextBlock Text="{Binding SessionSummary}" Style="{StaticResource Text.Wrap}" />
+                                <TextBlock Text="FPS" Style="{StaticResource Text.CardHeader}" Margin="0,12,0,4" />
+                                <ctl:Sparkline Height="90" Values="{Binding SessionFps}" Stroke="{DynamicResource Brush.Series1}" />
+                                <DockPanel Margin="0,12,0,4">
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Rectangle Width="14" Height="3" Fill="{DynamicResource Brush.Series1}" Margin="0,0,6,0" /><TextBlock Text="CPU" Style="{StaticResource Text.Muted}" Margin="0,0,14,0" />
+                                        <Rectangle Width="14" Height="3" Fill="{DynamicResource Brush.Series2}" Margin="0,0,6,0" /><TextBlock Text="GPU" Style="{StaticResource Text.Muted}" />
+                                    </StackPanel>
+                                    <TextBlock Text="TEMPERATUREN (°C, 0–100)" Style="{StaticResource Text.CardHeader}" />
+                                </DockPanel>
+                                <ctl:PerformanceChart Height="150" Series1="{Binding SessionCpuTemp}" Series2="{Binding SessionGpuTemp}"
+                                                      Brush1="{DynamicResource Brush.Series1}" Brush2="{DynamicResource Brush.Series2}" Brush3="{DynamicResource Brush.Series3}"
+                                                      GridBrush="{DynamicResource Brush.Grid}" LabelBrush="{DynamicResource Brush.TextDim}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- ===================== HINTERGRUNDÜBERWACHUNG ===================== -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="ÜBERWACHUNG IM HINTERGRUND (INFOBEREICH)" Style="{StaticResource Overlay.Section}" />
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" MaxWidth="760" HorizontalAlignment="Left"
+                                   Text="Ein Symbol im Infobereich der Taskleiste prüft regelmäßig Temperaturen, Laufwerke, Bluescreens, Virenschutz und Backups und meldet Probleme per Windows-Benachrichtigung. Es wird nur gelesen, nichts verändert. Dieselbe Meldung wiederholt sich frühestens nach der eingestellten Sperrzeit." />
+                        <WrapPanel Margin="0,10,0,0">
+                            <CheckBox Style="{StaticResource Switch}" Content="Symbol im Infobereich und Überwachung aktiv" IsChecked="{Binding TrayEnabled}" Margin="0,0,24,6" />
+                            <CheckBox Style="{StaticResource Switch}" Content="Beim Schließen in den Infobereich minimieren" IsChecked="{Binding MinimizeToTray}" Margin="0,0,24,6" />
+                            <CheckBox Style="{StaticResource Switch}" Content="Überwachung pausiert" IsChecked="{Binding MonitorPaused}" Margin="0,0,24,6" />
+                        </WrapPanel>
+
+                        <StackPanel Margin="0,8,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox Content="CPU-Temperatur über" IsChecked="{Binding CpuTempEnabled}" VerticalAlignment="Center" Width="190" />
+                                <TextBox Text="{Binding CpuTempLimit}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="°C" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox Content="GPU-Temperatur über" IsChecked="{Binding GpuTempEnabled}" VerticalAlignment="Center" Width="190" />
+                                <TextBox Text="{Binding GpuTempLimit}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="°C" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="… länger als" Style="{StaticResource Overlay.Label}" Width="178" Margin="12,4,0,4" />
+                                <TextBox Text="{Binding SustainSeconds}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="Sekunden" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <CheckBox Content="Laufwerk belegt ab" IsChecked="{Binding DiskEnabled}" VerticalAlignment="Center" Width="190" />
+                                <TextBox Text="{Binding DiskWarnPercent}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="% (Warnung)" VerticalAlignment="Center" />
+                                <TextBox Text="{Binding DiskCriticalPercent}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="% (kritisch)" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <CheckBox Content="SMART-/Laufwerkswarnung (aus der letzten SMART-Abfrage)" IsChecked="{Binding SmartEnabled}" Margin="0,6,0,0" />
+                            <CheckBox Content="Neuer Bluescreen seit der letzten Prüfung" IsChecked="{Binding BlueScreenEnabled}" Margin="0,6,0,0" />
+                            <CheckBox Content="Virenschutz ausgeschaltet (Defender und kein anderer aktiver Virenschutz)" IsChecked="{Binding DefenderEnabled}" Margin="0,6,0,0" />
+                            <CheckBox Content="Backup überfällig" IsChecked="{Binding BackupEnabled}" Margin="0,6,0,0" />
+                            <TextBlock Text="Die Backup-Regel ist in dieser Version noch nicht mit der Datensicherung verbunden." Style="{StaticResource Text.Muted}" FontSize="11" Margin="24,2,0,0"
+                                       Visibility="{Binding BackupRuleAvailable, Converter={StaticResource InvBoolToVis}}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBlock Text="Prüfintervall" Style="{StaticResource Overlay.Label}" Width="178" />
+                                <TextBox Text="{Binding CheckInterval}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="Minuten" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Wiederholungssperre" Style="{StaticResource Overlay.Label}" Width="178" />
+                                <TextBox Text="{Binding RepeatLock}" Style="{StaticResource Overlay.Number}" /><TextBlock Text="Minuten je Regel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                            <Button Style="{StaticResource Button.Primary}" Content="Übernehmen" Command="{Binding ApplyMonitorCommand}" Padding="18,8" />
+                            <Button Content="Jetzt prüfen" Command="{Binding CheckNowCommand}" Margin="8,0,0,0" />
+                            <TextBlock Text="{Binding LastCheckText}" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="14,0,0,0" />
+                        </StackPanel>
+
+                        <TextBlock Text="LETZTE MELDUNGEN" Style="{StaticResource Text.CardHeader}" Margin="0,16,0,6" />
+                        <TextBlock Text="Keine Meldungen in dieser Sitzung." Style="{StaticResource Text.Muted}"
+                                   Visibility="{Binding Alerts.Count, Converter={StaticResource NullToVis}, ConverterParameter=invert}" />
+                        <ItemsControl ItemsSource="{Binding Alerts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,3">
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Time}" Style="{StaticResource Text.Muted}" Width="100" />
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Message}" Style="{StaticResource Text.MutedWrap}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

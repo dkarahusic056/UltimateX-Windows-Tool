@@ -2,19 +2,25 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UltimateX.App.Infrastructure;
+using UltimateX.Core.Analysis;
 using UltimateX.Services.Common;
+using UltimateX.Services.Data;
 using UltimateX.Services.Network;
 
 namespace UltimateX.App.ViewModels;
 
-public sealed record SpeedtestRow(string Date, string Download, string Upload, string Ping, string Jitter);
+public sealed record SpeedtestRow(string Date, string Download, string Upload, string Ping, string Jitter, string Source);
 
-/// <summary>Speedtest mit Tacho, Historie und 7/30-Tage-Vergleich (§23).</summary>
+/// <summary>
+/// Speedtest mit Tacho, Historie und 7/30-Tage-Vergleich (§23).
+/// v1.3: zusätzlich speedtest.ch eingebettet (WebView2, Controls/SpeedtestChBrowser) mit manueller Ergebnisübernahme
+/// in denselben Verlauf (Quelle „speedtest.ch (manuell)“). Die Webseite wird nicht ausgelesen.
+/// </summary>
 public sealed partial class SpeedtestViewModel : PageViewModel
 {
     public override string Title => "Speedtest";
     public override string Glyph => "\uEC4A";
-    public override string Keywords => "speedtest internet geschwindigkeit download upload ping jitter bandbreite";
+    public override string Keywords => "speedtest internet geschwindigkeit download upload ping jitter bandbreite speedtest.ch cloudflare";
 
     private CancellationTokenSource? _cts;
 
@@ -29,14 +35,41 @@ public sealed partial class SpeedtestViewModel : PageViewModel
 
     public ObservableCollection<SpeedtestRow> History { get; } = [];
 
+    // ---- v1.3: speedtest.ch (eingebettet) ----
+    /// <summary>true = Bereich „speedtest.ch“ statt eigenem Test anzeigen (lädt die Webseite erst dann).</summary>
+    [ObservableProperty] private bool _showSpeedtestCh;
+    [ObservableProperty] private string _manualDownload = "";
+    [ObservableProperty] private string _manualUpload = "";
+    [ObservableProperty] private string _manualPing = "";
+    [ObservableProperty] private string _manualJitter = "";
+    [ObservableProperty] private string? _manualError;
+
+    public bool ShowOwnTest
+    {
+        get => !ShowSpeedtestCh;
+        set => ShowSpeedtestCh = !value;
+    }
+
+    partial void OnShowSpeedtestChChanged(bool value) => OnPropertyChanged(nameof(ShowOwnTest));
+
     public string? LastDownload => LastResult is null ? null : Format.BitsPerSecond(LastResult.DownloadBps);
     public string? LastUpload => LastResult is null ? null : Format.BitsPerSecond(LastResult.UploadBps);
+
+    /// <summary>Jitter; bei manuellen Einträgen ohne Jitter-Angabe „N/A“ (gespeichert als 0, siehe <see cref="ApplyManual"/>).</summary>
+    public string? LastJitter => LastResult is null ? null : JitterText(LastResult.JitterMs, LastResult.Server);
 
     partial void OnLastResultChanged(SpeedtestResult? value)
     {
         OnPropertyChanged(nameof(LastDownload));
         OnPropertyChanged(nameof(LastUpload));
+        OnPropertyChanged(nameof(LastJitter));
     }
+
+    private static string JitterText(double jitterMs, string server)
+        => ManualSpeedtestEntry.IsManualSource(server) && jitterMs <= 0 ? "N/A" : $"{jitterMs:0.0} ms";
+
+    private static string SourceText(string server)
+        => ManualSpeedtestEntry.IsManualSource(server) ? server : "Eigener Test (" + server + ")";
 
     protected override Task LoadAsync()
     {
@@ -49,7 +82,8 @@ public sealed partial class SpeedtestViewModel : PageViewModel
         var all = AppServices.Speedtest.LoadHistory();
         History.Clear();
         foreach (var r in all.OrderByDescending(r => r.Time).Take(50))
-            History.Add(new SpeedtestRow(r.Time.ToString("dd.MM.yyyy HH:mm"), Format.BitsPerSecond(r.DownloadBps), Format.BitsPerSecond(r.UploadBps), $"{r.PingMs:0} ms", $"{r.JitterMs:0.0} ms"));
+            History.Add(new SpeedtestRow(r.Time.ToString("dd.MM.yyyy HH:mm"), Format.BitsPerSecond(r.DownloadBps), Format.BitsPerSecond(r.UploadBps), $"{r.PingMs:0} ms",
+                JitterText(r.JitterMs, r.Server), SourceText(r.Server)));
 
         string? Avg(int days)
         {
@@ -129,4 +163,26 @@ public sealed partial class SpeedtestViewModel : PageViewModel
 
     [RelayCommand]
     private void Cancel() => _cts?.Cancel();
+
+    /// <summary>
+    /// Übernimmt die vom Benutzer abgetippten speedtest.ch-Werte in den Speedtest-Verlauf (Quelle „speedtest.ch (manuell)“).
+    /// Datenmodell: Jitter ist in der Datenbank Pflichtfeld – ohne Angabe wird 0 gespeichert und als „N/A“ angezeigt;
+    /// Paketverlust bleibt leer (null).
+    /// </summary>
+    [RelayCommand]
+    private void ApplyManual()
+    {
+        if (!ManualSpeedtestEntry.TryParse(ManualDownload, ManualUpload, ManualPing, ManualJitter, out var m, out var error) || m is null)
+        {
+            ManualError = error;
+            return;
+        }
+        ManualError = null;
+        var record = new SpeedtestRecord(DateTime.Now, m.DownloadMbps * 1e6, m.UploadMbps * 1e6, m.PingMs, m.JitterMs ?? 0, null, ManualSpeedtestEntry.SourceName);
+        AppServices.History.AddSpeedtest(record);
+        LastResult = new SpeedtestResult(record.Time, record.DownloadBps, record.UploadBps, record.PingMs, record.JitterMs, null, record.Server);
+        LoadHistory();
+        ManualDownload = ManualUpload = ManualPing = ManualJitter = "";
+        StatusMessage = "speedtest.ch-Ergebnis in den Verlauf übernommen.";
+    }
 }

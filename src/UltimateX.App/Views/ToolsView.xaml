@@ -33,6 +33,62 @@
                     <Button Content="Geplantes Herunterfahren abbrechen" Command="{Binding AbortShutdownCommand}" Style="{StaticResource Button.Danger}" Margin="0" />
                 </StackPanel>
 
+                <!-- v1.3 Zeitgesteuerte Energieaktionen -->
+                <TextBlock Text="Zeitgesteuert" Style="{StaticResource Text.H2}" />
+                <ctl:ChamferBorder Style="{StaticResource Card.Notice}" Margin="0,0,0,8"
+                                   Visibility="{Binding MissedNote, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding MissedNote}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource Card}" Visibility="{Binding HasSchedule, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="{Binding ScheduleText}" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding RemainingText}" Style="{StaticResource Text.Display}" FontSize="30" Foreground="{DynamicResource Brush.Warning}" />
+                            <TextBlock Text="{Binding ScheduleNote}" Style="{StaticResource Text.MutedWrap}" MaxWidth="640" HorizontalAlignment="Left" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <Button Content="Abbrechen" Command="{Binding CancelScheduleCommand}" Style="{StaticResource Button.Danger}" Margin="0,0,0,6" />
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="+15 min" Command="{Binding Postpone15Command}" Margin="0,0,6,0" />
+                                <Button Content="+1 h" Command="{Binding Postpone60Command}" Margin="0" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,24,8">
+                                <TextBlock Text="Aktion" Style="{StaticResource Text.Muted}" Margin="0,0,0,4" />
+                                <ComboBox ItemsSource="{Binding PowerActions}" SelectedItem="{Binding SelectedPowerAction}" DisplayMemberPath="Label" Width="200" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,24,8">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="PowerWhen" Content="In …" IsChecked="{Binding UseDelay}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="PowerWhen" Content="Um …" IsChecked="{Binding UseClock}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding UseDelay, Converter={StaticResource BoolToVis}}">
+                                    <TextBox Text="{Binding DelayAmount, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="0,0,8,0" MaxLength="5" />
+                                    <ComboBox ItemsSource="{Binding DelayUnits}" SelectedItem="{Binding SelectedDelayUnit}" DisplayMemberPath="Label" Width="120" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding UseClock, Converter={StaticResource BoolToVis}}">
+                                    <TextBox Text="{Binding ClockText, UpdateSourceTrigger=PropertyChanged}" Width="80" Margin="0,0,8,0" MaxLength="5" ToolTip="HH:mm, z. B. 22:30" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="PowerDay" Content="heute" IsChecked="{Binding ClockToday}" />
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="PowerDay" Content="morgen" IsChecked="{Binding ClockTomorrow}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Content="Planen" Command="{Binding SchedulePowerCommand}" Style="{StaticResource Button.Primary}" VerticalAlignment="Bottom" Margin="0,0,0,8" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding SelectedPowerAction.Note}" Style="{StaticResource Text.MutedWrap}" MaxWidth="900" HorizontalAlignment="Left" />
+                        <TextBlock Style="{StaticResource Text.MutedWrap}" MaxWidth="900" HorizontalAlignment="Left" Margin="0,4,0,0"
+                                   Text="Ungespeicherte Arbeit sichern: Beim geplanten Herunterfahren/Neustart schließt Windows alle Programme zwangsweise. 5 Minuten und 1 Minute vorher warnt ULTIMATE X (wenn es läuft) mit „Abbrechen“ und „Verschieben“. Höchstens 7 Tage im Voraus." />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
                 <!-- CMD & PowerShell Tools (§38) -->
                 <TextBlock Text="Windows-Werkzeuge" Style="{StaticResource Text.H2}" />
                 <ItemsControl ItemsSource="{Binding AllTools}" ItemsPanel="{StaticResource WrapPanelTemplate}">

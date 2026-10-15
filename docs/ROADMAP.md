@@ -58,7 +58,55 @@ Referenz: Abschnittsnummern des Master-Prompts. ✅ = umgesetzt, ◐ = umgesetzt
 | Named-Pipe-IPC App ↔ Admin-Helper (ACL, Peer-Prüfung, Nonce, Replay-Schutz, Limits, Schema) | Security | ✅ | ersetzt die Ausgabedateien in `%ProgramData%` |
 | Tests, Security-Tests, Doku, Release-Build 1.1.0 | 6, 7 | ✅ | |
 
+## v1.2 – Erweiterung (Entwicklungsauftrag „Ultimate X Windows Control“)
+
+Bestandsaufnahme vor Umsetzung: vorhanden = schon in 1.1, teilweise = erweitert, neu = in 1.2 hinzugekommen.
+
+| Bereich | Stand vorher | Status 1.2 | Hinweis |
+|---|---|---|---|
+| CPU-/RAM-/Datenträger-Benchmark | vorhanden | ✅ erweitert | 7 CPU-Lasten, Dauerlast + Throttling, RAM-Schreiben/Kopieren, Datenträger-Modi + Zugriffszeit |
+| GPU-Benchmark | neu | ✅ | D3D11 Compute (GFLOPS, Bandbreite, Stabilität); FPS = N/A |
+| Netzwerk-Benchmark + Network Health Score | teilweise (Speedtest) | ✅ | |
+| Complete Benchmark, Performance Score, Tiers, Expected vs Actual, Bottleneck Analyzer | neu | ✅ | Skala geschätzt, Kalibrierung offen |
+| RAM-Stabilitätstest Quick/Standard/Extended + Boot | teilweise (Komponententest-Muster) | ✅ | Boot = Windows-Speicherdiagnose |
+| Drive Health | teilweise (SMART) | ✅ | Bewertung mit Begründung |
+| Gaming Check, Can My PC Run It, FPS-Schätzung, installierte Spiele, Websuche, Upgrade Advisor | neu | ✅ | lokale DB, ESTIMATED |
+| New PC Setup (Prüfungen, Office/ODT, Apps, Profile, Empfehlungen, Quellenprüfung, Protokoll, SET UP THIS PC) | neu | ✅ | nur winget/Store/ODT |
+| Open Source Security (ClamAV) | neu | ✅ | Defender bleibt primär |
+| Driver Health, BIOS/UEFI Center, Windows Health Score | teilweise | ✅ | BIOS nur lesend |
+| Crash Analyzer | vorhanden | ✅ unverändert | |
+| System Snapshot + Vergleich | neu | ✅ | |
+| Complete PC Check, PDF-Bericht, PC Map | vorhanden | ✅ erweitert | Treiber/RAM/BIOS/Score, Bewertungsabschnitt |
+| Navigation neu geordnet, Doku, Tests, Version 1.2.0 | – | ✅ | |
+
+## v1.3 – Erweiterung
+
+| Bereich | Stand vorher | Status 1.3 | Hinweis |
+|---|---|---|---|
+| Can My PC Run It: Anforderungen online (Steam-Shop, ohne Konto), lokale Speicherung, fehlende Anforderungen installierter Spiele nachladen | lokale DB (42 Spiele) | ✅ | nur ausdrücklich genannte Werte; RT/Upscaling online = N/A |
+| Benchmark-Kalibrierung (`ScoreReferences`), Ursachen je Komponente, Systemlaufwerk-Wertung, NVMe-Erwartung je Generation | Skala geschätzt, CPU immer 100 | ✅ | Skala weiterhin ESTIMATED |
+| Geekbench-Karte (Start eines installierten Geekbench, manuelle Ergebnisse, Vergleich je Hauptversion) | neu | ✅ | kein Download/Upload durch ULTIMATE X |
+| Backup-Center: System-Abbild (wbadmin), Abbild durchsuchen, Anleitung Zurückspielen | neu | ✅ | Ziel NTFS, nur neuestes Abbild je Platte zuverlässig |
+| Datei-Backup-Profile mit Versionen (Hardlinks), Prüfung, Aufbewahrung, Wiederherstellung, Zeitplan, Export/Import | neu | ◐ | ohne VSS; Zeitpläne nur bei laufender App |
+| Treiber-Sicherung (pnputil), Rettungs-USB-Stick (RecoveryDrive) | neu | ✅ | Zurückspielen nur per Anleitung |
+| Netzwerk-Werkzeuge: Traceroute, Port-Prüfung, DNS-Cache, IP erneuern, DNS-Server, Netzwerk-Reset, Wake-on-LAN | teilweise (Ping, Scanner) | ✅ | kein Portscanner, feste DNS-Anbieter |
+| Sicherheits-Check (SECURITY SCORE, Behebung SMB1/RDP/Firewall) | neu | ✅ | Defender/UAC/Windows Update nie verändert |
+| Geplante Aufgaben (Signatur, Markierungen, aktivieren/deaktivieren) | neu | ✅ | nie löschen |
+| Datenschutz (sechs Windows-Einstellungen, Rückgängig) | neu | ✅ | keine Dienste/Komponenten/Hosts-Datei |
+| Zeitgesteuert Herunterfahren/Neustart/Sperren/Abmelden/Energiesparen | teilweise (Countdown) | ✅ | max. 7 Tage; Sperren/Abmelden/Energiesparen nur bei laufender App |
+| PC Lifetime | neu | ✅ | TBW = N/A |
+| Speicherplatz-Analyse (Ordner, Top 100, Duplikate, Dateitypen) | neu | ✅ | Löschen nur in den Papierkorb |
+| Zeitleiste „Was ist passiert?“ mit Ursachen-Hinweis | teilweise (Ereignisse, Absturzanalyse) | ✅ | Backup-Center-Läufe nicht enthalten |
+| In-Game-Overlay, FPS über ETW ohne Injection, Profile, Sitzungsaufzeichnung | neu | ✅ | kein exklusives Vollbild; FPS-Recht nötig |
+| Überwachung im Infobereich (Temperatur, Laufwerke, SMART, Bluescreen, Virenschutz, Backup überfällig) | neu | ✅ | nur lesend, kein Internet |
+| speedtest.ch eingebettet (WebView2, Navigationsschutz, manuelle Übernahme) | neu | ✅ | WebView2-Runtime nötig |
+| Benutzerhandbuch DE/EN, Doku, Tests (797), Version 1.3.0 | – | ✅ | `docs/HANDBUCH.md`, `docs/MANUAL_EN.md` |
+
 ## Offene Punkte
+
+- **Score-Kalibrierung:** v1.3 hat die Referenzwerte korrigiert (CPU nicht mehr fest bei 100); weitere Messläufe auf mehreren PCs zum Nachjustieren von `ScoreReferences` bleiben sinnvoll.
+- **Visuelle Abnahme v1.3:** neue Seiten am Gerät prüfen (MSI 1.3.0), insbesondere Englisch, Light-Theme, Overlay auf mehreren Monitoren und Infobereich.
+- **Backup:** optionale Schattenkopien (VSS) für geöffnete Dateien und Zeitpläne unabhängig von der laufenden App wären mögliche Erweiterungen (bewusst nicht in 1.3, siehe THREAT_MODEL).
 
 - **Signierung:** Für Release-Builds ein Code-Signing-Zertifikat hinterlegen (`build.ps1 -CertThumbprint …`). Unsignierte Entwicklungs-Builds laufen, App-Updates werden dann aber bewusst nicht installiert.
 - **CPU-Temperatur ohne Zusatzprogramm:** Windows stellt Kerntemperaturen nur über einen Kernel-Treiber bereit. ULTIMATE X lädt bewusst keinen (Sicherheitsrisiko, vgl. WinRing0-Schwachstelle) und übernimmt stattdessen die Werte von HWiNFO/LibreHardwareMonitor.

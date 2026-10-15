@@ -14,6 +14,11 @@ using UltimateX.Services.Security;
 using UltimateX.Services.Software;
 using UltimateX.Services.Startup;
 using UltimateX.Services.SystemTools;
+using UltimateX.Services.Setup;
+using UltimateX.Services.Backup;
+using UltimateX.Services.Gaming;
+using UltimateX.Services.Insights;
+using UltimateX.Services.NetSec;
 
 namespace UltimateX.App.Infrastructure;
 
@@ -56,10 +61,38 @@ public static class AppServices
     public static CrashAnalysisService Crashes { get; } = new();
 
     public static ComponentTestService ComponentTests { get; } = new(Hardware, Security, Health, Network, Wlan, Displays, Inventory, Monitor.SensorManager);
+
+    // ---------------- v1.2 ----------------
+    public static SystemInfoService SystemInfo { get; } = new();
+    public static DriveHealthService DriveHealth { get; } = new();
+    public static MemoryTestService MemoryTest { get; } = new();
+    public static NetworkBenchmarkService NetworkBenchmark { get; } = new(Network, Speedtest, Wlan, Benchmarks);
+    public static CompleteBenchmarkService CompleteBenchmark { get; } = new(Benchmarks, NetworkBenchmark, MemoryTest);
+    public static SoftwareSetupService SoftwareSetup { get; } = new(Programs, Hardware, Health, Security);
+    public static OfficeDeploymentService Office { get; } = new();
+    public static NvidiaDriverService NvidiaDrivers { get; } = new();
+    public static ClamAvService ClamAv { get; } = new();
+    public static SnapshotService Snapshots { get; } = new(Hardware, Drivers, Programs, Inventory, Startup, Network, Health);
     public static ComponentTestHistory TestHistory { get; } = new();
 
-    /// <summary>Produktversion (aus der Assembly, z. B. „1.1.0“).</summary>
-    public static string AppVersion { get; } = typeof(AppServices).Assembly.GetName().Version?.ToString(3) ?? "1.1.0";
+    // ---------------- v1.3 ----------------
+    public static GameRequirementsOnlineService OnlineGames { get; } = new();
+    public static BackupService Backup { get; } = new();
+    public static SystemImageService SystemImage { get; } = new(Backup);
+    public static DriverBackupService DriverBackup { get; } = new(Backup);
+    public static NetworkToolsService NetTools { get; } = new();
+    public static SecurityAuditService SecurityAudit { get; } = new(Security);
+    public static ScheduledTaskService ScheduledTasks { get; } = new();
+    public static PrivacyService Privacy { get; } = new();
+    public static ScheduledPowerService ScheduledPower { get; } = new(Power);
+    public static UptimeRecorder Uptime { get; } = new();
+    public static LifetimeService Lifetime { get; } = new();
+    public static TimelineService Timeline { get; } = new(Crashes, Programs);
+    public static FpsMonitorService Fps { get; } = new();
+    public static BackgroundCheckService BackgroundChecks { get; } = new(DriveHealth);
+
+    /// <summary>Produktversion (aus der Assembly, z. B. „1.3.0“).</summary>
+    public static string AppVersion { get; } = typeof(AppServices).Assembly.GetName().Version?.ToString(3) ?? "1.3.1";
 
     public static SensitiveActionGuard Guard { get; } = new();
 

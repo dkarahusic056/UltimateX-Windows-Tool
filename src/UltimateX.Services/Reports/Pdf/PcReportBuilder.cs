@@ -61,6 +61,7 @@ public sealed class PcReportBuilder
         if (options.ComponentTests) b.ComponentTestSection();
         if (options.Benchmarks) b.BenchmarkSection();
         if (options.CrashAnalysis) b.CrashSection();
+        if (options.Analysis) b.AnalysisSection();
         b.Footers();
         return b._doc;
     }
@@ -618,6 +619,40 @@ public sealed class PcReportBuilder
         Table([new("Datum", 1.2), new("Test", 0.9), new("Punkte", 0.8), new("Messwerte", 3.6, true)],
             _d.Benchmarks.OrderByDescending(b => b.Time).Take(15).Select(b => (Row(Format.DateTimeText(b.Time), b.Kind, b.Score.ToString("0", Loc.Culture),
                 string.Join(" · ", b.Metrics.Take(5).Select(m => $"{m.Name} {m.Value.ToString("0.#", Loc.Culture)} {m.Unit}"))), (DataState?)null)));
+    }
+
+    private void AnalysisSection()
+    {
+        Section("Bewertung und Empfehlungen");
+        var a = _d.Analysis;
+        if (a is null) { Paragraph("Keine Bewertungsdaten vorhanden.", 9, Muted); return; }
+        static string Score(int? v) => v is { } x ? $"{x}/100" : "N/A";
+        static DataState? State(int? v) => v is null ? DataState.NotAvailable : v >= 60 ? DataState.Ok : v >= 35 ? DataState.Warning : DataState.Problem;
+        var s = a.Performance.Scores;
+        KeyValues(
+        [
+            ("ULTIMATE X Performance Score", a.Performance.Total is { } t ? $"{t}/100 · {a.Performance.TierText}" : "N/A", State(a.Performance.Total)),
+            ("Gaming Score", Score(a.GamingScore), State(a.GamingScore)),
+            ("CPU", Score(s.Cpu), State(s.Cpu)),
+            ("GPU", Score(s.Gpu), State(s.Gpu)),
+            ("RAM", Score(s.Ram), State(s.Ram)),
+            ("SSD", Score(s.Storage), State(s.Storage)),
+            ("Netzwerk (Network Health Score)", Score(a.NetworkScore), State(a.NetworkScore)),
+            ("Kühlung", Score(s.Cooling), State(s.Cooling)),
+            ("RAM-Test", a.MemoryTest ?? "Noch nicht ausgeführt", a.MemoryTestState),
+        ]);
+        Paragraph("Punkteskala geschätzt: 100 ≈ aktuelle Spitzenklasse für Endanwender. Schätzwerte sind als ESTIMATED gekennzeichnet; nicht messbare Werte als N/A.", 8, Muted);
+        if (a.Drives.Count > 0)
+        {
+            SubTitle("Laufwerke");
+            Table([new("Laufwerk", 3), new("Zustand", 1)], a.Drives.Select(d => (Row(d.Drive, d.Verdict), (DataState?)d.State)));
+        }
+        SubTitle("Gefundene Probleme");
+        Table([new("Bereich", 1.4), new("Befund", 4, true)], a.Problems.Select(p => (Row(p.Area, p.Value + (p.Advice is null ? "" : " – " + p.Advice)), (DataState?)p.State)),
+            "Keine Probleme gefunden.");
+        SubTitle("Empfehlungen");
+        if (a.Recommendations.Count == 0) Paragraph("Keine Maßnahmen erforderlich.", 9, Muted);
+        foreach (var r in a.Recommendations) Paragraph("• " + r, 9);
     }
 
     private void CrashSection()

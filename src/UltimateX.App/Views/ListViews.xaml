@@ -30,6 +30,9 @@
                 </DockPanel>
                 <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
                 <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsSearchingUpdates, Converter={StaticResource BoolToVis}}" />
+                <Expander Header="DRIVER HEALTH CENTER" IsExpanded="True" Margin="0,0,0,10">
+                    <ItemsControl ItemsSource="{Binding Health}" ItemTemplate="{StaticResource FindingTemplate}" Margin="0,8,0,0" />
+                </Expander>
             </StackPanel>
             <DataGrid ItemsSource="{Binding Rows}">
                 <DataGrid.Columns>

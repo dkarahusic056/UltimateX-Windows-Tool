@@ -64,6 +64,8 @@ public sealed partial class PcMapViewModel : PageViewModel
 
     [ObservableProperty] private string _boardTitle = "MAINBOARD";
     [ObservableProperty] private string _boardDetail = "";
+    [ObservableProperty] private string? _boardFirmware;
+    [ObservableProperty] private string? _boardScore;
 
     protected override async Task LoadAsync()
     {
@@ -76,6 +78,24 @@ public sealed partial class PcMapViewModel : PageViewModel
         BoardDetail = $"{hw.Board.Manufacturer} {hw.Board.Product}".Trim();
         Cpu.Device = hw.Cpu?.Name ?? "nicht verfügbar";
         Ram.Device = $"{Format.Bytes(hw.Memory.TotalBytes)} · {hw.Memory.Modules.Count} Modul(e)";
+        // v1.2 §41: Kanäle/Takt am RAM-Knoten, Firmware/Sicherheit am Mainboard, Performance Score in der Mitte.
+        try
+        {
+            var modules = await Task.Run(() => AppServices.SystemInfo.GetRamModules());
+            var channels = global::UltimateX.Core.Analysis.MemoryAnalysis.EstimateChannels(modules);
+            var speed = global::UltimateX.Core.Analysis.MemoryAnalysis.CheckSpeed(modules);
+            if (modules.Count > 0)
+                Ram.Device += $"\n{channels.Text} · {(speed.CurrentMTs is { } mts ? mts + " MT/s" : "N/A")}";
+            var fw = await Task.Run(() => AppServices.SystemInfo.GetFirmwareInfo(AppServices.Hardware));
+            var perf = global::UltimateX.Core.Analysis.PerformanceScore.Combine(
+                global::UltimateX.Services.Benchmark.CompleteBenchmarkService.ScoresFromHistory(AppServices.Benchmarks.History()));
+            BoardFirmware = $"{fw.FirmwareType} · Secure Boot: {fw.SecureBoot} · TPM: {fw.Tpm}";
+            BoardScore = perf.Total is { } t ? $"Performance Score {t}/100 · {perf.TierText}" : "Performance Score: N/A (Complete Benchmark ausführen)";
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Management.ManagementException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            BoardFirmware = "Firmware: nicht verfügbar";
+        }
         var gpu = hw.Gpus.FirstOrDefault(g => !g.Name.Contains("Basic Display", StringComparison.OrdinalIgnoreCase)) ?? hw.Gpus.FirstOrDefault();
         Gpu.Device = gpu?.Name ?? "nicht verfügbar";
         Storage.Device = string.Join(", ", hw.Disks.Select(d => $"{d.Name} ({d.MediaType})"));

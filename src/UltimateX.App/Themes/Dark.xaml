@@ -11,7 +11,9 @@
     <Color x:Key="Color.Glow">#FF2525</Color>
 
     <SolidColorBrush x:Key="Brush.Background" Color="#070707" />
-    <SolidColorBrush x:Key="Brush.Sidebar" Color="#0B0B0B" />
+    <!-- v1.3: Schleier über dem Hintergrundbild (Lesbarkeit) -->
+    <SolidColorBrush x:Key="Brush.Backdrop" Color="#B3070707" />
+    <SolidColorBrush x:Key="Brush.Sidebar" Color="#E00B0B0B" />
     <SolidColorBrush x:Key="Brush.Surface" Color="#171717" />
     <SolidColorBrush x:Key="Brush.SurfaceAlt" Color="#1D1D1D" />
     <SolidColorBrush x:Key="Brush.SurfaceRaised" Color="#222222" />

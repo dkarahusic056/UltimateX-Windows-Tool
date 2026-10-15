@@ -35,6 +35,11 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
+        <!-- v1.3: Hintergrundbild (Dark: abgedunkelt, Light: fast ausgeblendet über Brush.Backdrop) -->
+        <Image Grid.ColumnSpan="2" Source="Assets/background.jpg" Stretch="UniformToFill" HorizontalAlignment="Center" VerticalAlignment="Center"
+               RenderOptions.BitmapScalingMode="HighQuality" IsHitTestVisible="False" />
+        <Border Grid.ColumnSpan="2" Background="{DynamicResource Brush.Backdrop}" IsHitTestVisible="False" />
+
         <!-- ===================== Sidebar (Modern Control Center, §5) ===================== -->
         <Grid Width="252" Visibility="{Binding IsSimpleMode, Converter={StaticResource InvBoolToVis}}">
             <Border Background="{DynamicResource Brush.Sidebar}" />

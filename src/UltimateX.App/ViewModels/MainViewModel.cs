@@ -65,34 +65,54 @@ public sealed partial class MainViewModel : ObservableObject, INavigator
 
     public MainViewModel()
     {
+        // Hauptnavigation v1.2: Dashboard · Hardware · Performance · Benchmarks · Memory Test · Storage · Network · Gaming ·
+        // Can My PC Run It · New PC Setup · Drivers · Windows Health · Security · Technician · Reports · Settings
         var dashboard = Add(new DashboardViewModel(this));
         Add(new HardwareViewModel(), true);
+        Add(new BiosCenterViewModel());
         Add(new MonitorViewModel());
         Add(new SensorSourcesViewModel());
+        Add(new BenchmarkViewModel());
+        Add(new MemoryTestViewModel());
+        Add(new StorageViewModel());
+        Add(new LifetimeViewModel());
         Add(new ComponentTestViewModel());
-        Add(new ReportViewModel(this));
         Add(new NetworkViewModel(), true);
         Add(new SpeedtestViewModel());
         Add(new NetworkScannerViewModel());
-        Add(new UpdatesViewModel(), true);
+        Add(new NetworkToolsViewModel());
+        Add(new GamingCheckViewModel(this), true);
+        Add(new CanRunViewModel());
+        Add(new UpgradeAdvisorViewModel(this));
+        Add(new OverlayViewModel());
+        Add(new NewPcSetupViewModel(this), true);
+        Add(new UpdatesViewModel());
         Add(new DriversViewModel());
         Add(new ProgramsViewModel());
         Add(new StartupViewModel());
+        Add(new ScheduledTasksViewModel());
         Add(new ProcessesViewModel());
-        Add(new BenchmarkViewModel());
-        Add(new CleanupViewModel(), true);
+        Add(new CleanupViewModel());
+        Add(new SpaceAnalysisViewModel());
         Add(new DesktopOrganizerViewModel());
         Add(new HealthViewModel(), true);
         Add(new CrashAnalysisViewModel());
+        Add(new TimelineViewModel());
         Add(new EventsViewModel());
         Add(new ServicesViewModel());
-        Add(new SecurityViewModel());
-        Add(new ToolsViewModel(), true);
+        Add(new SnapshotViewModel());
+        Add(new BackupViewModel(), true);
+        Add(new SecurityViewModel(), true);
+        Add(new SecurityAuditViewModel());
+        Add(new PrivacyViewModel());
+        Add(new OpenSourceSecurityViewModel());
+        Add(new TechnicianViewModel(), true);
+        Add(new ToolsViewModel());
         Add(new LogsViewModel());
-        Add(new SettingsViewModel(this));
+        Add(new ReportViewModel(this));
+        Add(new SettingsViewModel(this), true);
         // Layouts (§5–§10) – auch direkt über die Navigation erreichbar
         Add(new GamingViewModel(), true);
-        Add(new TechnicianViewModel());
         Add(new PcMapViewModel(this));
         Add(new AdminServiceViewModel(this));
 

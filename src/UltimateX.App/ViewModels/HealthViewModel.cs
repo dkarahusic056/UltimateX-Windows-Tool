@@ -3,10 +3,13 @@ using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UltimateX.App.Infrastructure;
+using UltimateX.Core.Analysis;
 using UltimateX.Core.Common;
 using UltimateX.Core.Security;
 using UltimateX.Services.Health;
 using UltimateX.Services.SystemTools;
+
+using Services_ = UltimateX.Services;
 
 namespace UltimateX.App.ViewModels;
 
@@ -20,6 +23,11 @@ public sealed partial class HealthViewModel : PageViewModel
     public ObservableCollection<ServiceStatus> Services { get; } = [];
     public ObservableCollection<EventProblem> Problems { get; } = [];
     public ObservableCollection<string> Drives { get; } = [];
+
+    /// <summary>WINDOWS HEALTH SCORE (v1.2 §36).</summary>
+    public ObservableCollection<Finding> ScoreFindings { get; } = [];
+    [ObservableProperty] private string _windowsScore = "–";
+    [ObservableProperty] private DataState _windowsScoreState = DataState.NotAvailable;
 
     [ObservableProperty] private RebootStatus? _reboot;
     [ObservableProperty] private string? _activeHours;
@@ -66,6 +74,36 @@ public sealed partial class HealthViewModel : PageViewModel
         Problems.Clear();
         foreach (var p in await problemsTask) Problems.Add(p);
         Crashes = await crashTask;
+        await UpdateScoreAsync();
+    }
+
+    private async Task UpdateScoreAsync()
+    {
+        var reboot = Reboot;
+        var crashes = Crashes;
+        var disabled = Services.Count(x => x.Health == DataState.Problem);
+        var errorTypes = Problems.Count(p => p.Level.Contains("Krit", StringComparison.OrdinalIgnoreCase) || p.Level.Contains("Crit", StringComparison.OrdinalIgnoreCase)
+                                             || p.Level.Contains("Fehler", StringComparison.OrdinalIgnoreCase) || p.Level.Contains("Error", StringComparison.OrdinalIgnoreCase));
+        var (restore, lastUpdate, security, disks) = await Task.Run(() => (
+            RestorePointService.IsSystemRestoreEnabled(),
+            Services_.Setup.SoftwareSetupService.LastWindowsUpdate(),
+            AppServices.Security.GetStatus(),
+            (AppServices.LastHardware ?? AppServices.Hardware.Collect()).Disks));
+        var av = security.FirstOrDefault(x => x.Area.Contains("Antivirus", StringComparison.OrdinalIgnoreCase) || x.Area.Contains("Defender", StringComparison.OrdinalIgnoreCase));
+        var (score, findings) = WindowsHealthScore.Calculate(new WindowsHealthInputs(
+            reboot?.RebootRequired,
+            disabled,
+            crashes?.BugChecks,
+            crashes?.UnexpectedShutdowns,
+            errorTypes,
+            restore,
+            lastUpdate is { } lu ? (int)(DateTime.Now - lu).TotalDays : null,
+            av is null ? null : av.State == DataState.Ok,
+            disks.Count(d => d.HealthState is DataState.Problem or DataState.Warning)));
+        WindowsScore = $"{score} / 100";
+        WindowsScoreState = score >= 80 ? DataState.Ok : score >= 60 ? DataState.Warning : DataState.Problem;
+        ScoreFindings.Clear();
+        foreach (var f in findings) ScoreFindings.Add(f);
     }
 
     private async Task RunRepairAsync(AllowedCommand command, string? parameter, string title, string explanation)

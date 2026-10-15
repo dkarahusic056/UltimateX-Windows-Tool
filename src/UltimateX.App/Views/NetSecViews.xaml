@@ -1,0 +1,350 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="clr-namespace:UltimateX.App.ViewModels"
+                    xmlns:ctl="clr-namespace:UltimateX.App.Controls">
+
+    <!-- v1.3: Netzwerk-Werkzeuge, Sicherheits-Check, Geplante Aufgaben, Datenschutz.
+         Eigene Stilschlüssel (NetSec.*), damit diese Datei unabhängig von der Reihenfolge der übrigen View-Dateien lädt. -->
+
+    <Style x:Key="NetSec.Header" TargetType="TextBlock" BasedOn="{StaticResource Text.CardHeader}">
+        <Setter Property="Foreground" Value="{DynamicResource Brush.AccentHot}" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style x:Key="NetSec.Hero" TargetType="ctl:ChamferBorder">
+        <Setter Property="Background" Value="{DynamicResource Brush.Hero}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Brush.CardBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Chamfer" Value="20" />
+        <Setter Property="AccentLength" Value="70" />
+        <Setter Property="Padding" Value="22,18" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <!-- ===================== NETZWERK-WERKZEUGE ===================== -->
+    <DataTemplate DataType="{x:Type vm:NetworkToolsViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+
+                <WrapPanel>
+                    <!-- Traceroute -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="TRACEROUTE" Style="{StaticResource NetSec.Header}" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,0,0,8"
+                                       Text="Zeigt die Stationen (Router) auf dem Weg zu einem Ziel. Höchstens 30 Hops, je Hop 3 Pings." />
+                            <DockPanel Margin="0,0,0,6">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Primary}" Content="Route verfolgen" Command="{Binding TraceCommand}" />
+                                <TextBox Text="{Binding TraceTarget, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,8" ToolTip="Hostname oder IP-Adresse, z. B. example.com" />
+                            </DockPanel>
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding ResolveNames}" Content="Hostnamen der Router auflösen" Margin="0,0,0,8" />
+                            <DataGrid ItemsSource="{Binding TraceHops}" MaxHeight="300" AutoGenerateColumns="False" IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Hop" Binding="{Binding Ttl}" Width="45" />
+                                    <DataGridTextColumn Header="Zeiten" Binding="{Binding TimesText}" Width="150" />
+                                    <DataGridTextColumn Header="Adresse" Binding="{Binding AddressText}" Width="130" />
+                                    <DataGridTextColumn Header="Name" Binding="{Binding HostText}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Port-Prüfung -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="PORT-PRÜFUNG" Style="{StaticResource NetSec.Header}" />
+                            <TextBlock Text="{Binding PortHint}" Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,0,0,8" />
+                            <TextBlock Text="Ziel" Style="{StaticResource Text.Muted}" />
+                            <TextBox Text="{Binding PortHost, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" ToolTip="Hostname oder IP-Adresse" />
+                            <TextBlock Text="Ports (durch Komma getrennt)" Style="{StaticResource Text.Muted}" />
+                            <TextBox Text="{Binding PortList, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" ToolTip="z. B. 80, 443, 3389" />
+                            <WrapPanel Margin="0,0,0,8">
+                                <Button Style="{StaticResource Button.Primary}" Content="Ports prüfen" Command="{Binding CheckPortsCommand}" />
+                                <Button Content="Gängige Dienste einsetzen" Command="{Binding UseCommonPortsCommand}" />
+                            </WrapPanel>
+                            <DataGrid ItemsSource="{Binding PortResults}" MaxHeight="300" AutoGenerateColumns="False" IsReadOnly="True">
+                                <DataGrid.Columns>
+                                    <DataGridTemplateColumn Header="" Width="24">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding DataState, Converter={StaticResource StateBrush}}" VerticalAlignment="Center" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Port" Binding="{Binding Port}" Width="60" />
+                                    <DataGridTextColumn Header="Dienst" Binding="{Binding Service}" Width="150" />
+                                    <DataGridTextColumn Header="Status" Binding="{Binding StateText}" Width="*" />
+                                    <DataGridTextColumn Header="Zeit" Binding="{Binding TimeText}" Width="70" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- DNS & Reparatur -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="DNS-SERVER" Style="{StaticResource NetSec.Header}" />
+                            <TextBlock Text="Adapter" Style="{StaticResource Text.Muted}" />
+                            <ComboBox ItemsSource="{Binding Adapters}" SelectedItem="{Binding SelectedAdapter}" Margin="0,0,0,6" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,0,0,8">
+                                <Run Text="Aktuell: " /><Run Text="{Binding SelectedAdapter.DnsText, Mode=OneWay}" />
+                                <Run Text=" · " /><Run Text="{Binding SelectedAdapter.ModeText, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Text="Neuer DNS-Server" Style="{StaticResource Text.Muted}" />
+                            <ComboBox ItemsSource="{Binding DnsChoices}" SelectedItem="{Binding SelectedDns}" Margin="0,0,0,6" />
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding IncludeIpv6}" Content="Auch IPv6 umstellen" Margin="0,0,0,8" />
+                            <Button Style="{StaticResource Button.Primary}" Content="DNS-Server übernehmen (UAC)" Command="{Binding ApplyDnsCommand}" HorizontalAlignment="Left" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,6,0,0"
+                                       Text="Nur feste, bekannte Anbieter (Cloudflare, Quad9, Google) oder automatisch (DHCP). Windows fragt je Adresse einmal nach Adminrechten." />
+
+                            <TextBlock Text="REPARATUR" Style="{StaticResource NetSec.Header}" Margin="0,16,0,8" />
+                            <WrapPanel>
+                                <Button Content="DNS-Cache leeren" Command="{Binding FlushDnsCommand}" />
+                                <Button Content="IP-Adresse neu anfordern" Command="{Binding RenewIpCommand}" />
+                                <Button Style="{StaticResource Button.Danger}" Content="Netzwerk zurücksetzen …" Command="{Binding ResetNetworkCommand}" />
+                            </WrapPanel>
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11"
+                                       Text="„Netzwerk zurücksetzen“ setzt Winsock und TCP/IP zurück (Adminrechte). Danach ist ein Neustart nötig." />
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+
+                    <!-- Wake-on-LAN -->
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="560" VerticalAlignment="Top">
+                        <StackPanel>
+                            <TextBlock Text="WAKE-ON-LAN" Style="{StaticResource NetSec.Header}" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,0,0,8"
+                                       Text="Weckt einen ausgeschalteten PC im eigenen Heimnetz (Broadcast ins lokale Subnetz). Das Zielgerät muss Wake-on-LAN unterstützen." />
+                            <TextBlock Text="Bekanntes Gerät (aus dem Netzwerk-Scanner)" Style="{StaticResource Text.Muted}" />
+                            <ComboBox ItemsSource="{Binding WakeTargets}" SelectedItem="{Binding SelectedWakeTarget}" Margin="0,0,0,8" />
+                            <TextBlock Text="MAC-Adresse" Style="{StaticResource Text.Muted}" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Primary}" Content="Aufwecken" Command="{Binding WakeCommand}" />
+                                <TextBox Text="{Binding WakeMac, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,8" ToolTip="z. B. AA:BB:CC:DD:EE:FF" />
+                            </DockPanel>
+                        </StackPanel>
+                    </ctl:ChamferBorder>
+                </WrapPanel>
+
+                <!-- Ergebnisbereich -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,6">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Content="Abbrechen" Command="{Binding CancelCommand}" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}" />
+                                <Button Content="Kopieren" Command="{Binding CopyOutputCommand}" />
+                            </StackPanel>
+                            <TextBlock Text="ERGEBNIS" Style="{StaticResource NetSec.Header}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,6" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}" />
+                        <TextBox Text="{Binding Output, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource Font.Mono}" FontSize="11" MinHeight="120" MaxHeight="320"
+                                 TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+
+    <!-- ===================== SICHERHEITS-CHECK ===================== -->
+    <DataTemplate DataType="{x:Type vm:SecurityAuditViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource NetSec.Hero}" AccentBrush="{Binding ScoreState, Converter={StaticResource StateBrush}}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Top">
+                            <Button Style="{StaticResource Button.Primary}" Content="Erneut prüfen" Command="{Binding RefreshCommand}" />
+                            <Button Content="Windows-Sicherheit öffnen" Command="{Binding OpenWindowsSecurityCommand}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="SECURITY SCORE" Style="{StaticResource NetSec.Header}" />
+                            <TextBlock Text="{Binding Score}" Style="{StaticResource Text.Display}" FontSize="40" Foreground="{Binding ScoreState, Converter={StaticResource StateBrush}}" />
+                            <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" Margin="0,4,0,4" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" MaxWidth="640" HorizontalAlignment="Left"
+                                       Text="Nur lesende Prüfung. Behebungen werden ausschließlich nach Ihrer Bestätigung mit Adminrechten ausgeführt. Defender und Benutzerkontensteuerung werden nie verändert." />
+                        </StackPanel>
+                    </DockPanel>
+                </ctl:ChamferBorder>
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+
+                <ctl:ChamferBorder Style="{StaticResource Card}" Visibility="{Binding HasFixes, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="BEHEBUNG (NACH BESTÄTIGUNG, UAC)" Style="{StaticResource NetSec.Header}" />
+                        <WrapPanel>
+                            <Button Style="{StaticResource Button.Primary}" Content="SMB1 deaktivieren …" Command="{Binding FixSmb1Command}" Visibility="{Binding CanFixSmb1, Converter={StaticResource BoolToVis}}" />
+                            <Button Style="{StaticResource Button.Primary}" Content="Remotedesktop ausschalten …" Command="{Binding FixRdpCommand}" Visibility="{Binding CanFixRdp, Converter={StaticResource BoolToVis}}" />
+                            <Button Style="{StaticResource Button.Primary}" Content="Firewall überall einschalten …" Command="{Binding FixFirewallCommand}" Visibility="{Binding CanFixFirewall, Converter={StaticResource BoolToVis}}" />
+                        </WrapPanel>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="BEFUNDE" Style="{StaticResource NetSec.Header}" />
+                        <ItemsControl ItemsSource="{Binding Findings}" ItemTemplate="{StaticResource FindingTemplate}" />
+                        <WrapPanel Margin="0,8,0,0">
+                            <Button Content="AutoPlay-Einstellungen" Command="{Binding OpenAutoplayCommand}" />
+                            <Button Content="Windows Update" Command="{Binding OpenWindowsUpdateCommand}" />
+                        </WrapPanel>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <ctl:ChamferBorder Style="{StaticResource Card}" Visibility="{Binding FixOutput, Converter={StaticResource NullToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="AUSGABE DER LETZTEN BEHEBUNG" Style="{StaticResource NetSec.Header}" />
+                        <TextBox Text="{Binding FixOutput, Mode=OneWay}" IsReadOnly="True" FontFamily="{StaticResource Font.Mono}" FontSize="11" MaxHeight="220"
+                                 TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+
+    <!-- ===================== GEPLANTE AUFGABEN ===================== -->
+    <DataTemplate DataType="{x:Type vm:ScheduledTasksViewModel}">
+        <Grid Margin="0,0,12,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+            </ctl:ChamferBorder>
+            <ctl:ChamferBorder Grid.Row="1" Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="ÜBERSICHT" Style="{StaticResource NetSec.Header}" />
+                    <ItemsControl ItemsSource="{Binding Summary}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ctl:ChamferBorder Style="{StaticResource Badge}" BorderBrush="{Binding State, Converter={StaticResource StateBrush}}" Margin="0,0,8,6">
+                                    <TextBlock FontSize="11">
+                                        <Run Text="{Binding Label, Mode=OneWay}" /><Run Text=": " /><Run Text="{Binding Value, Mode=OneWay}" FontWeight="SemiBold" />
+                                    </TextBlock>
+                                </ctl:ChamferBorder>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding ProgressText}" Style="{StaticResource Text.Muted}" Visibility="{Binding ProgressText, Converter={StaticResource NullToVis}}" />
+                </StackPanel>
+            </ctl:ChamferBorder>
+            <WrapPanel Grid.Row="2" Margin="0,0,0,8">
+                <TextBox Text="{Binding Filter, UpdateSourceTrigger=PropertyChanged}" Width="260" Margin="0,0,8,8" ToolTip="Filter nach Pfad, Programm oder Herausgeber" />
+                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding HideMicrosoft}" Content="Microsoft-Aufgaben ausblenden" Margin="0,0,12,8" VerticalAlignment="Center" />
+                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding OnlyNoticeable}" Content="Nur auffällige" Margin="0,0,12,8" VerticalAlignment="Center" />
+                <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" />
+                <Button Content="Deaktivieren …" Command="{Binding DisableCommand}" CommandParameter="{Binding SelectedTask}" />
+                <Button Content="Aktivieren …" Command="{Binding EnableCommand}" CommandParameter="{Binding SelectedTask}" />
+            </WrapPanel>
+            <DataGrid Grid.Row="3" ItemsSource="{Binding Tasks}" SelectedItem="{Binding SelectedTask}" AutoGenerateColumns="False" IsReadOnly="True"
+                      EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True">
+                <DataGrid.Columns>
+                    <DataGridTemplateColumn Header="Markierung" Width="200">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Style="{StaticResource StatusDot}" Fill="{Binding MarkerState, Converter={StaticResource StateBrush}}" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Marker}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Aufgabe" Binding="{Binding Name}" Width="200" />
+                    <DataGridTextColumn Header="Ordner" Binding="{Binding Folder}" Width="170" />
+                    <DataGridTextColumn Header="Status" Binding="{Binding State}" Width="100" />
+                    <DataGridTextColumn Header="Auslöser" Binding="{Binding Triggers}" Width="140" />
+                    <DataGridTextColumn Header="Letzter Lauf" Binding="{Binding LastRun}" Width="120" />
+                    <DataGridTextColumn Header="Nächster Lauf" Binding="{Binding NextRun}" Width="120" />
+                    <DataGridTextColumn Header="Ergebnis" Binding="{Binding LastResult}" Width="90" />
+                    <DataGridTextColumn Header="Programm" Binding="{Binding Program}" Width="260" />
+                    <DataGridTextColumn Header="Herausgeber" Binding="{Binding Publisher}" Width="*" MinWidth="140" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <ctl:ChamferBorder Grid.Row="4" Style="{StaticResource Card}" Margin="0,8,0,0" Visibility="{Binding SelectedTask, Converter={StaticResource NullToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding SelectedTask.Path}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11">
+                        <Run Text="Programm: " /><Run Text="{Binding SelectedTask.Program, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding SelectedTask.Arguments, Mode=OneWay}" />
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Foreground="{DynamicResource Brush.Warning}"
+                               Visibility="{Binding SelectedTask.IsMicrosoftWindows, Converter={StaticResource BoolToVis}}"
+                               Text="Windows-Aufgabe: Änderungen können Wartung, Updates oder Sicherheitsfunktionen beeinträchtigen." />
+                    <TextBlock Text="{Binding Output}" Style="{StaticResource Text.MutedWrap}" FontFamily="{StaticResource Font.Mono}" FontSize="11"
+                               Visibility="{Binding Output, Converter={StaticResource NullToVis}}" />
+                </StackPanel>
+            </ctl:ChamferBorder>
+        </Grid>
+    </DataTemplate>
+
+    <!-- ===================== DATENSCHUTZ ===================== -->
+    <DataTemplate DataType="{x:Type vm:PrivacyViewModel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+            <StackPanel Margin="0,0,12,24">
+                <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
+                </ctl:ChamferBorder>
+                <ctl:ChamferBorder Style="{StaticResource Card.Notice}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="Aktualisieren" Command="{Binding RefreshCommand}" />
+                            <Button Content="Windows-Datenschutz öffnen" Command="{Binding OpenPrivacySettingsCommand}" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Text.Wrap}"
+                                       Text="Jede Einstellung lässt sich einzeln umschalten. Der ursprüngliche Wert wird vor der ersten Änderung gesichert und kann jederzeit wiederhergestellt werden. Es werden keine Windows-Komponenten entfernt, keine Dienste abgeschaltet und keine Hosts-Datei verändert." />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,4,0,0">
+                                <Run Text="Sicherung: " /><Run Text="{Binding BackupPath, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+                </ctl:ChamferBorder>
+                <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+                <ItemsControl ItemsSource="{Binding Settings}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ctl:ChamferBorder Style="{StaticResource Card}" AccentBrush="{Binding State, Converter={StaticResource StateBrush}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" VerticalAlignment="Center" />
+                                            <ctl:ChamferBorder Style="{StaticResource Badge}" BorderBrush="{Binding State, Converter={StaticResource StateBrush}}" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Style="{StaticResource StatusDot}" Width="7" Height="7" Margin="0,0,6,0" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                                                    <TextBlock Text="{Binding StateText}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+                                                </StackPanel>
+                                            </ctl:ChamferBorder>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource Text.Wrap}" />
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,4,0,0">
+                                            <Run Text="{Binding Scope, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding BackupText, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock Style="{StaticResource Text.MutedWrap}" FontFamily="{StaticResource Font.Mono}" FontSize="10">
+                                            <Run Text="{Binding RegistryPath, Mode=OneWay}" /><LineBreak /><Run Text="{Binding Values, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <Button Style="{StaticResource Button.Primary}" Content="Datenschutz aktivieren"
+                                                IsEnabled="{Binding IsProtected, Converter={StaticResource InvBool}}"
+                                                Command="{Binding DataContext.ProtectCommand, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" CommandParameter="{Binding}" />
+                                        <Button Content="Rückgängig" IsEnabled="{Binding CanUndo}"
+                                                Command="{Binding DataContext.UndoCommand, RelativeSource={RelativeSource AncestorType=ScrollViewer}}" CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </Grid>
+                            </ctl:ChamferBorder>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DataTemplate>
+</ResourceDictionary>

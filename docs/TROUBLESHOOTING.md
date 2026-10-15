@@ -61,3 +61,23 @@
 | winget fehlt | „App-Installer“ aus dem Microsoft Store installieren. |
 | Windows Hello erscheint nicht | Hello in den Windows-Einstellungen einrichten; ohne Hello wird explizit bestätigt. |
 | Desktop Organizer meldet „automatisch anordnen“ | Rechtsklick auf Desktop → Ansicht → „Symbole automatisch anordnen“ deaktivieren. |
+
+## Neu in v1.3
+
+Ausführlich mit Schritt-für-Schritt-Anleitungen: [HANDBUCH.md, Kapitel 10](HANDBUCH.md#10-häufige-fragen-und-problembehandlung) · English: [MANUAL_EN.md, chapter 10](MANUAL_EN.md#10-faq-and-problem-solving).
+
+| Problem | Lösung |
+|---|---|
+| speedtest.ch: „WebView2-Runtime ist nicht installiert“ | Knopf „WebView2-Runtime bei Microsoft herunterladen“, Runtime installieren, App neu starten. Der eigene Speedtest (Cloudflare) funktioniert ohne WebView2. |
+| Overlay zeigt „FPS: N/A“ | Konto zur Gruppe „Leistungsprotokollbenutzer“ (*Performance Log Users*) hinzufügen, ab- und anmelden, App neu starten. |
+| FPS-Zeile fehlt | Spiel nutzt OpenGL/Vulkan ohne Direct3D-Bildausgabe – keine Messung möglich. |
+| Overlay im Spiel unsichtbar | Exklusiver Vollbildmodus: im Spiel „Randloses Fenster“ bzw. „Vollbild (Fenster)“ wählen; Tastenkürzel prüfen (Standard Strg+Umschalt+O). |
+| Geplantes Backup lief nicht | Zeitpläne nur, solange ULTIMATE X läuft – „Beim Schließen in den Infobereich minimieren“ und „Mit Windows starten“/„Minimiert starten“ aktivieren. |
+| Backup auf gewohnte Platte verweigert | Unter dem Buchstaben steckt eine andere Backup-Platte (`UltimateX-Backup\target.json`). Richtige Platte anschließen. |
+| System-Abbild schlägt fehl (wbadmin) | Ziel: externe, lokale NTFS-Platte, nicht das Systemlaufwerk, freier Platz ≥ belegter Platz + 10 %; UAC bestätigen. |
+| „VHDX-Dateien suchen“: nur Administratoren | „Abbild-Ordner im Explorer“ öffnen, Windows-Zugriffsabfrage bestätigen, erneut suchen. |
+| Steam: „zu viele Anfragen“ (HTTP 429) | Einige Minuten warten, erneut versuchen. |
+| Performance Score nach Update niedriger | Neue Kalibrierung in 1.3 (in 1.2 stand die CPU immer bei 100). |
+| Geplantes Sperren/Energiesparen nicht ausgeführt | Nur bei laufender App, wird nicht nachgeholt. |
+| Geplantes Herunterfahren schlägt fehl | Ein anderes Programm hat bereits ein Herunterfahren geplant – zuerst „Geplantes Herunterfahren abbrechen“. |
+| DNS-Umstellung nur teilweise | Eine UAC-Abfrage wurde abgelehnt – Anbieter erneut wählen oder „Automatisch (DHCP)“. |

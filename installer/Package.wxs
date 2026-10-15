@@ -50,10 +50,6 @@
     <Feature Id="Main" Title="ULTIMATE X Windows Control" Description="Anwendung und Startmenü-Verknüpfung." Level="1" AllowAbsent="no" ConfigurableDirectory="INSTALLFOLDER">
       <ComponentGroupRef Id="AppFiles" />
       <ComponentRef Id="StartMenuShortcut" />
-      <ComponentRef Id="ManualPdf" />
-      <ComponentRef Id="ManualStartMenuShortcut" />
-      <ComponentRef Id="ManualPdfEn" />
-      <ComponentRef Id="ManualEnStartMenuShortcut" />
       <ComponentRef Id="HelperRunsDir" />
       <ComponentRef Id="HelperRunsCleanup" />
       <Feature Id="DesktopShortcutFeature" Title="Desktop-Verknüpfung" Description="Verknüpfung auf dem Desktop erstellen." Level="1">
@@ -72,30 +68,10 @@
         <!-- Gleiche AppUserModelID wie NotificationService.AppUserModelId – Voraussetzung für Windows-Toasts (§83). -->
         <ShortcutProperty Key="System.AppUserModel.ID" Value="UltimateX.WindowsControl" />
       </Shortcut>
+      <Shortcut Id="StartMenuManual" Name="ULTIMATE X Handbuch" Description="Benutzerhandbuch (PDF)"
+                Target="[INSTALLFOLDER]Docs\ULTIMATE X Handbuch.pdf" WorkingDirectory="INSTALLFOLDER" />
       <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
       <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
-    </Component>
-
-    <!-- Bedienungsanleitung (PDF) neben der EXE; Quelle: docs\Bedienungsanleitung.pdf (relativ zu installer\) -->
-    <Component Id="ManualPdf" Directory="INSTALLFOLDER" Guid="802CD9A7-FD8C-43EF-B0D3-CA17821B6D56">
-      <File Id="ManualPdfFile" Source="..\docs\Bedienungsanleitung.pdf" Name="Bedienungsanleitung.pdf" KeyPath="yes" />
-    </Component>
-
-    <Component Id="ManualStartMenuShortcut" Directory="UltimateXMenuFolder" Guid="EB203084-8DF8-461B-894D-B8E53E354C48">
-      <Shortcut Id="StartMenuManual" Name="ULTIMATE X Bedienungsanleitung" Description="Bedienungsanleitung (PDF)"
-                Target="[#ManualPdfFile]" WorkingDirectory="INSTALLFOLDER" />
-      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="ManualShortcut" Type="integer" Value="1" KeyPath="yes" />
-    </Component>
-
-    <!-- Englische Bedienungsanleitung (PDF) neben der EXE; Quelle: docs\User_Manual_EN.pdf (relativ zu installer\) -->
-    <Component Id="ManualPdfEn" Directory="INSTALLFOLDER" Guid="FFFC79B9-4BA1-4533-8897-43C30BA1A6F0">
-      <File Id="ManualPdfEnFile" Source="..\docs\User_Manual_EN.pdf" Name="User_Manual_EN.pdf" KeyPath="yes" />
-    </Component>
-
-    <Component Id="ManualEnStartMenuShortcut" Directory="UltimateXMenuFolder" Guid="7A7C2419-0609-4338-8D6C-1B2DB4BAB4AD">
-      <Shortcut Id="StartMenuManualEn" Name="ULTIMATE X User Manual (EN)" Description="User Manual (PDF, English)"
-                Target="[#ManualPdfEnFile]" WorkingDirectory="INSTALLFOLDER" />
-      <RegistryValue Root="HKLM" Key="Software\ULTIMATE X\Windows Control" Name="ManualEnShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 
     <Component Id="DesktopShortcut" Directory="DesktopFolder" Guid="0E6A4F1C-93B2-4C8D-A5E7-1D2F3B4C5A69">
@@ -122,5 +98,7 @@
     </Component>
     <ui:WixUI Id="WixUI_FeatureTree" />
     <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <WixVariable Id="WixUIDialogBmp" Value="WixDialog.bmp" />
+    <WixVariable Id="WixUIBannerBmp" Value="WixBanner.bmp" />
   </Package>
 </Wix>

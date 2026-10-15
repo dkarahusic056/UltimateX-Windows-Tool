@@ -16,6 +16,10 @@
          Das gebündelte e_sqlite3 ist von GHSA-2m69-gcr7-jv3q betroffen und hat keine gepatchte Version. -->
     <PackageVersion Include="Microsoft.Data.Sqlite.Core" Version="8.0.10" />
     <PackageVersion Include="SQLitePCLRaw.bundle_winsqlite3" Version="2.1.6" />
+    <!-- v1.3: FPS-Messung für das Overlay über Windows-ETW (Prinzip PresentMon), MIT – keine Injection in Spiele -->
+    <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.13" />
+    <!-- v1.3: eingebettete Webansicht (speedtest.ch) über die in Windows enthaltene Edge-WebView2-Runtime, BSD-3-Clause -->
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
     <!-- Tests -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="xunit" Version="2.9.0" />

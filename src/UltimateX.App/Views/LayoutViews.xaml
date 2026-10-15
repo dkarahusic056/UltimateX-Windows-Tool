@@ -148,6 +148,10 @@
                         <TextBlock Text="&#xE964;" Style="{StaticResource Text.Icon}" FontSize="40" HorizontalAlignment="Center" Foreground="{DynamicResource Brush.Accent}" />
                         <TextBlock Text="{Binding BoardTitle}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,8,0,2" />
                         <TextBlock Text="{Binding BoardDetail}" Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" MaxWidth="230" />
+                        <TextBlock Text="{Binding BoardFirmware}" Style="{StaticResource Text.Muted}" FontSize="10" HorizontalAlignment="Center" MaxWidth="240"
+                                   TextTrimming="CharacterEllipsis" Visibility="{Binding BoardFirmware, Converter={StaticResource NullToVis}}" />
+                        <TextBlock Text="{Binding BoardScore}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Accent}" HorizontalAlignment="Center"
+                                   MaxWidth="240" TextTrimming="CharacterEllipsis" Visibility="{Binding BoardScore, Converter={StaticResource NullToVis}}" />
                     </StackPanel>
                 </Button>
 

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using UltimateX.App.Infrastructure;
+using UltimateX.Core.Analysis;
 using UltimateX.Core.Common;
 using UltimateX.Services.Drivers;
 using UltimateX.Services.SystemTools;
@@ -25,6 +26,9 @@ public sealed partial class DriversViewModel : PageViewModel
     private List<DriverRow> _all = [];
 
     public ObservableCollection<DriverRow> Rows { get; } = [];
+
+    /// <summary>DRIVER HEALTH CENTER (v1.2 §34): Gerätefehler, unbekannte Geräte, unsignierte und veraltete Treiber.</summary>
+    public ObservableCollection<Finding> Health { get; } = [];
 
     [ObservableProperty] private string _filter = string.Empty;
     [ObservableProperty] private bool _importantOnly = true;
@@ -54,9 +58,43 @@ public sealed partial class DriversViewModel : PageViewModel
 
         var unsigned = drivers.Count(d => d.IsSigned == false);
         Summary = $"{drivers.Count} Gerätetreiber · {unsigned} ohne Signatur";
+        var (devices, _) = await Task.Run(() => AppServices.Inventory.GetDevices());
+        BuildHealth(drivers, devices, unsigned);
         if (state != DataState.Ok) StatusMessage = "Treiberliste unvollständig (WMI nicht vollständig verfügbar).";
         AnnotateUpdates();
         ApplyFilter();
+    }
+
+    private void BuildHealth(IReadOnlyList<DriverInfo> drivers, IReadOnlyList<Services.Hardware.PnpDevice> devices, int unsigned)
+    {
+        Health.Clear();
+        var errors = devices.Where(d => d.ErrorCode is > 0 and not 28 and not 22).ToList();
+        var unknown = devices.Where(d => d.ErrorCode == 28 || d.Class.Equals("Unknown", StringComparison.OrdinalIgnoreCase)).ToList();
+        Health.Add(errors.Count == 0
+            ? new Finding("Gerätefehler", CheckStatus.Pass, "Keine Geräte mit Fehlercode")
+            : new Finding("Gerätefehler", CheckStatus.Fail, $"{errors.Count} Gerät(e): " + string.Join(", ", errors.Take(4).Select(e => $"{e.Name} ({e.ErrorText})")),
+                "Details im Geräte-Manager; Treiber über Windows Update oder die Herstellerseite installieren."));
+        Health.Add(unknown.Count == 0
+            ? new Finding("Unbekannte Geräte", CheckStatus.Pass, "Keine")
+            : new Finding("Unbekannte Geräte", CheckStatus.Warning, $"{unknown.Count} Gerät(e) ohne Treiber: " + string.Join(", ", unknown.Take(4).Select(u => u.Name)),
+                "Chipsatz-/Mainboardtreiber des Herstellers oder Windows Update („Optionale Updates“) installieren."));
+        Health.Add(unsigned == 0
+            ? new Finding("Unsignierte Treiber", CheckStatus.Pass, "Alle Treiber sind signiert")
+            : new Finding("Unsignierte Treiber", CheckStatus.Warning, $"{unsigned} Treiber ohne gültige Signatur", "Herkunft prüfen – nur Treiber vom Gerätehersteller oder aus Windows Update verwenden."));
+
+        var now = DateTime.Now;
+        var oldGpu = drivers.Where(d => d.DeviceClass.Equals("Display", StringComparison.OrdinalIgnoreCase) && d.DriverDate is { } dt && (now - dt).TotalDays > 365).ToList();
+        var oldImportant = drivers.Where(d => ImportantClasses.Contains(d.DeviceClass) && !d.DeviceClass.Equals("Display", StringComparison.OrdinalIgnoreCase)
+                                              && d.DriverDate is { } dt && (now - dt).TotalDays > 5 * 365
+                                              && !(d.Provider ?? "").Contains("Microsoft", StringComparison.OrdinalIgnoreCase)).ToList();
+        Health.Add(oldGpu.Count == 0
+            ? new Finding("Grafiktreiber", CheckStatus.Pass, "Aktuell (jünger als 1 Jahr)")
+            : new Finding("Grafiktreiber", CheckStatus.Warning, string.Join(", ", oldGpu.Select(g => $"{g.DeviceName} vom {g.DriverDate:dd.MM.yyyy}")),
+                "Aktuellen Treiber von NVIDIA, AMD oder Intel installieren (offizielle Herstellerseite)."));
+        Health.Add(oldImportant.Count == 0
+            ? new Finding("Veraltete Treiber", CheckStatus.Pass, "Keine auffällig alten Treiber wichtiger Geräteklassen")
+            : new Finding("Veraltete Treiber", CheckStatus.Warning, $"{oldImportant.Count} Treiber älter als 5 Jahre",
+                "Mit „Nach Treiber-Updates suchen“ prüfen; ansonsten Herstellerseite. Keine Treiberportale von Drittanbietern verwenden."));
     }
 
     /// <summary>Ordnet gefundene Windows-Update-Treiber den installierten Geräten über die Hardware-ID zu.</summary>

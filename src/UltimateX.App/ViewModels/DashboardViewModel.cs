@@ -515,6 +515,7 @@ public sealed partial class DashboardViewModel : PageViewModel
         [
             "Windows", "Systemdateien (SFC)", "Komponentenspeicher (DISM)", "Laufwerke", "Datenträger-Gesundheit", "Dienste",
             "Updates / Neustart", "Sicherheit", "Netzwerk", "Autostart", "Ereignisprotokolle", "Hardware", "Temperaturen",
+            "Treiber", "Arbeitsspeicher", "BIOS/UEFI", "Leistung",
         ];
         foreach (var n in names) CheckSteps.Add(new CheckStep(n));
         CheckStep S(string n) => CheckSteps.First(c => c.Name == n);
@@ -638,6 +639,46 @@ public sealed partial class DashboardViewModel : PageViewModel
                     >= 80 => (DataState.Warning, $"Erhöhte Temperatur: {hottest} °C."),
                     _ => (DataState.Ok, $"Temperaturen unauffällig (max. {hottest} °C)."),
                 });
+            });
+
+            // v1.2 §39: Treiber, RAM, BIOS/UEFI und Leistung ergänzen den Check (nur lesend, keine Belastungstests).
+            await Step("Treiber", async () =>
+            {
+                var (devices, _) = await Task.Run(() => AppServices.Inventory.GetDevices());
+                var errors = devices.Count(d => d.ErrorCode is > 0 and not 22);
+                return errors > 0 ? (DataState.Warning, $"{errors} Gerät(e) mit Fehlercode – Details unter „Treiber“")
+                    : (DataState.Ok, "Keine Geräte mit Fehlercode");
+            });
+
+            await Step("Arbeitsspeicher", async () =>
+            {
+                var modules = await Task.Run(() => AppServices.SystemInfo.GetRamModules());
+                var speed = global::UltimateX.Core.Analysis.MemoryAnalysis.CheckSpeed(modules);
+                var channels = global::UltimateX.Core.Analysis.MemoryAnalysis.EstimateChannels(modules);
+                var test = AppServices.Benchmarks.History().Where(r => r.Kind == global::UltimateX.Services.Benchmark.BenchmarkService.KindMemTest)
+                    .OrderByDescending(r => r.Time).FirstOrDefault();
+                var testText = test is null ? "RAM-Test: noch nicht ausgeführt" : $"RAM-Test: {test.Score:0} Fehler ({Format.DateTimeText(test.Time)})";
+                var state = test is { Score: > 0 } ? DataState.Problem
+                    : speed.Status == global::UltimateX.Core.Analysis.CheckStatus.Warning || channels.Mode == global::UltimateX.Core.Analysis.ChannelMode.Single ? DataState.Warning
+                    : modules.Count == 0 ? DataState.NotAvailable : DataState.Ok;
+                return (state, $"{channels.Text} · {speed.Message} · {testText}");
+            });
+
+            await Step("BIOS/UEFI", async () =>
+            {
+                var fw = await Task.Run(() => AppServices.SystemInfo.GetFirmwareInfo(AppServices.Hardware));
+                var state = fw.SecureBootState == DataState.Problem || fw.TpmState == DataState.Problem ? DataState.Warning
+                    : fw.SecureBootState == DataState.NotAvailable && fw.TpmState == DataState.NotAvailable ? DataState.NotAvailable : DataState.Ok;
+                return (state, $"{fw.FirmwareType} · Secure Boot: {fw.SecureBoot} · TPM: {fw.Tpm}");
+            });
+
+            await Step("Leistung", () =>
+            {
+                var perf = global::UltimateX.Core.Analysis.PerformanceScore.Combine(
+                    global::UltimateX.Services.Benchmark.CompleteBenchmarkService.ScoresFromHistory(AppServices.Benchmarks.History()));
+                return Task.FromResult(perf.Total is { } total
+                    ? (DataState.Ok, $"ULTIMATE X Performance Score {total}/100 · {perf.TierText}")
+                    : (DataState.NotAvailable, "Noch kein Benchmark – Seite „Benchmark“ → Complete Benchmark"));
             });
 
             UpdateScore(hw);

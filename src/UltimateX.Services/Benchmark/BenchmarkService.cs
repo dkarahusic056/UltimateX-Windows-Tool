@@ -13,7 +13,18 @@ namespace UltimateX.Services.Benchmark;
 public sealed record BenchmarkMetric(string Name, double Value, string Unit);
 
 /// <summary>Ergebnis eines Testlaufs. Punkte sind relative Einheiten – vergleichbar nur mit eigenen früheren Läufen.</summary>
-public sealed record BenchmarkRun(string Kind, DateTime Time, double Score, IReadOnlyList<BenchmarkMetric> Metrics, string? Note = null);
+public sealed record BenchmarkRun(string Kind, DateTime Time, double Score, IReadOnlyList<BenchmarkMetric> Metrics, string? Note = null,
+    LoadSummary? Telemetry = null)
+{
+    /// <summary>Messwert per Name (null, wenn nicht vorhanden).</summary>
+    public double? Metric(string name) => Metrics.FirstOrDefault(m => m.Name == name)?.Value;
+}
+
+/// <summary>Optionen des CPU-Benchmarks (v1.2): optional eine längere Dauerlast zur Erkennung von Drosselung.</summary>
+public sealed record CpuBenchmarkOptions(int SecondsPerTest = 2, int SustainedSeconds = 0);
+
+/// <summary>Testmodi des Datenträger-Benchmarks (v1.2 §6). Große Schreibtests nur im Modus „Extended“.</summary>
+public enum DiskTestMode { Quick, Normal, Extended }
 
 public sealed record BenchmarkProgress(string Step, double Percent);
 
@@ -33,29 +44,55 @@ public sealed class BenchmarkService(HistoryDatabase db)
     public const string KindCpu = "CPU";
     public const string KindMemory = "RAM";
     public const string KindDisk = "Datenträger";
+    public const string KindGpu = "GPU";
+    public const string KindNetwork = "Netzwerk";
+    public const string KindComplete = "Complete";
+    public const string KindMemTest = "RAM-Test";
+
+    // Metriknamen, die die Gesamtwertung (PerformanceScore) auswertet.
+    public const string MetricSingle = "Single-Core-Punkte";
+    public const string MetricMulti = "Multi-Core-Punkte";
+    public const string MetricRamRead = "Lesen";
+    public const string MetricRamLatency = "Latenz";
+    public const string MetricDiskSeqRead = "Sequentiell lesen";
+    public const string MetricDisk4kRead = "4K zufällig lesen (QD1)";
 
     // ---------------------------------------------------------------- CPU
 
-    public BenchmarkRun RunCpu(IProgress<BenchmarkProgress>? progress, CancellationToken ct)
+    public BenchmarkRun RunCpu(IProgress<BenchmarkProgress>? progress, CancellationToken ct) => RunCpu(new CpuBenchmarkOptions(), progress, ct);
+
+    /// <summary>
+    /// CPU-Benchmark v1.2: sieben Lasten (Ganzzahl, Gleitkomma, Krypto/SHA-256, Kompression, Dekompression, AES-Verschlüsselung,
+    /// Rendering/Raytracing) je auf einem Kern und auf allen logischen Prozessoren, optional gefolgt von einer Dauerlast.
+    /// Takt, Auslastung, Temperatur und Leistungsaufnahme stammen – sofern vorhanden – aus den Sensoren.
+    /// </summary>
+    public BenchmarkRun RunCpu(CpuBenchmarkOptions options, IProgress<BenchmarkProgress>? progress, CancellationToken ct)
     {
-        var seconds = 2.0;
+        var seconds = Math.Clamp(options.SecondsPerTest, 1, 10);
         var threads = Environment.ProcessorCount;
         var tests = new (string Name, Func<WorkState, long> Unit)[]
         {
             ("Ganzzahl (Primzahlsieb)", PrimeSieveUnit),
             ("Gleitkomma (Mandelbrot)", MandelbrotUnit),
             ("Krypto (SHA-256)", ShaUnit),
+            ("Kompression (Deflate)", CompressUnit),
+            ("Dekompression (Deflate)", DecompressUnit),
+            ("Verschlüsselung (AES-256-GCM)", AesUnit),
+            ("Rendering (Raytracing)", RenderUnit),
         };
 
         var metrics = new List<BenchmarkMetric>();
         var single = new List<double>();
         var multi = new List<double>();
         var step = 0;
+        var totalSteps = tests.Length * 2 + (options.SustainedSeconds > 0 ? 1 : 0);
+        using var monitor = LoadMonitor.Start();
+        var watch = Stopwatch.StartNew();
         foreach (var (name, unit) in tests)
         {
-            progress?.Report(new BenchmarkProgress($"{name} – 1 Kern", 100.0 * step++ / (tests.Length * 2)));
+            progress?.Report(new BenchmarkProgress($"{name} – 1 Kern", 100.0 * step++ / totalSteps));
             var s = Measure(unit, 1, seconds, ct);
-            progress?.Report(new BenchmarkProgress($"{name} – {threads} Threads", 100.0 * step++ / (tests.Length * 2)));
+            progress?.Report(new BenchmarkProgress($"{name} – {threads} Threads", 100.0 * step++ / totalSteps));
             var m = Measure(unit, threads, seconds, ct);
             single.Add(s);
             multi.Add(m);
@@ -63,22 +100,185 @@ public sealed class BenchmarkService(HistoryDatabase db)
             metrics.Add(new BenchmarkMetric($"{name}, alle Kerne", Math.Round(m, 1), "Einheiten/s"));
         }
 
+        double? sustainedRatio = null;
+        if (options.SustainedSeconds > 0)
+        {
+            progress?.Report(new BenchmarkProgress($"Dauerlast ({options.SustainedSeconds} s, alle Kerne)", 100.0 * step / totalSteps));
+            sustainedRatio = Sustained(threads, options.SustainedSeconds, ct,
+                f => progress?.Report(new BenchmarkProgress($"Dauerlast ({options.SustainedSeconds} s, alle Kerne)", 100.0 * (step + f) / totalSteps)));
+        }
+        var telemetry = monitor.Stop();
+        watch.Stop();
+
         var singleScore = GeoMean(single) * 10;
         var multiScore = GeoMean(multi) * 10;
-        metrics.Insert(0, new BenchmarkMetric("Single-Core-Punkte", Math.Round(singleScore), "Punkte"));
-        metrics.Insert(1, new BenchmarkMetric("Multi-Core-Punkte", Math.Round(multiScore), "Punkte"));
-        metrics.Add(new BenchmarkMetric("Skalierung", Math.Round(multiScore / Math.Max(1, singleScore), 2), "×"));
+        metrics.Insert(0, new BenchmarkMetric(MetricSingle, Math.Round(singleScore), "Punkte"));
+        metrics.Insert(1, new BenchmarkMetric(MetricMulti, Math.Round(multiScore), "Punkte"));
+        metrics.Add(new BenchmarkMetric("Multithreading-Skalierung", Math.Round(multiScore / Math.Max(1, singleScore), 2), "×"));
+        if (sustainedRatio is { } r) metrics.Add(new BenchmarkMetric("Dauerlast: Leistung am Ende", Math.Round(r * 100), "%"));
+        AddTelemetry(metrics, telemetry, cpu: true);
+        metrics.Add(new BenchmarkMetric("Testdauer", Math.Round(watch.Elapsed.TotalSeconds), "s"));
         progress?.Report(new BenchmarkProgress("Fertig", 100));
-        return Save(new BenchmarkRun(KindCpu, DateTime.Now, Math.Round(multiScore), metrics,
-            $"{threads} logische Prozessoren · je Test {seconds:0} s"));
+
+        var na = new List<string>();
+        if (telemetry.CpuClockAvg is null) na.Add("Takt");
+        if (telemetry.CpuTempMax is null) na.Add("Temperatur");
+        if (telemetry.CpuPowerMax is null) na.Add("Leistungsaufnahme");
+        var note = $"{threads} logische Prozessoren · je Test {seconds:0} s · Testversion 1.2 · Thermal Throttling: {LoadMonitor.ThrottleText(telemetry.CpuThrottled)}"
+                   + (na.Count > 0 ? $" · N/A: {string.Join(", ", na)} (kein Sensor)" : "");
+        return Save(new BenchmarkRun(KindCpu, DateTime.Now, Math.Round(multiScore), metrics, note, telemetry));
     }
 
-    private sealed class WorkState
+    /// <summary>Hängt verfügbare Sensorwerte als Messwerte an (fehlende Sensoren werden ausgelassen, nie geschätzt).</summary>
+    internal static void AddTelemetry(List<BenchmarkMetric> metrics, LoadSummary t, bool cpu)
+    {
+        void Add(string name, double? v, string unit) { if (v is { } x) metrics.Add(new BenchmarkMetric(name, Math.Round(x, 1), unit)); }
+        if (cpu)
+        {
+            Add("CPU-Auslastung (Ø)", t.CpuLoadAvg, "%");
+            Add("Takt (Ø)", t.CpuClockAvg, "MHz");
+            Add("Takt (max.)", t.CpuClockMax, "MHz");
+            Add("Temperatur (Ø)", t.CpuTempAvg, "°C");
+            Add("Temperatur (max.)", t.CpuTempMax, "°C");
+            Add("Leistungsaufnahme (max.)", t.CpuPowerMax, "W");
+        }
+        else
+        {
+            Add("GPU-Auslastung (Ø)", t.GpuLoadAvg, "%");
+            Add("GPU-Takt (Ø)", t.GpuClockAvg, "MHz");
+            Add("GPU-Takt (max.)", t.GpuClockMax, "MHz");
+            Add("GPU-Temperatur (Ø)", t.GpuTempAvg, "°C");
+            Add("GPU-Temperatur (max.)", t.GpuTempMax, "°C");
+            Add("Hotspot-Temperatur (max.)", t.GpuHotspotMax, "°C");
+            Add("Lüfter (max.)", t.GpuFanMax, "%");
+            Add("Leistungsaufnahme (max.)", t.GpuPowerMax, "W");
+            if (t.VramUsedMax is { } v) metrics.Add(new BenchmarkMetric("VRAM-Verwendung (max.)", Math.Round(v / 1024.0 / 1024 / 1024, 2), "GB"));
+        }
+    }
+
+    /// <summary>Dauerlast: misst den Durchsatz in Fenstern und liefert das Verhältnis letztes / erstes Fenster.</summary>
+    private static double? Sustained(int threads, int seconds, CancellationToken ct, Action<double> progress)
+    {
+        var window = Math.Max(5, seconds / 6);
+        var windows = new List<double>();
+        var stop = Stopwatch.StartNew();
+        while (stop.Elapsed.TotalSeconds < seconds)
+        {
+            ct.ThrowIfCancellationRequested();
+            windows.Add(Measure(MixedUnit, threads, window, ct));
+            progress(Math.Min(1, stop.Elapsed.TotalSeconds / seconds));
+        }
+        return windows.Count >= 2 && windows[0] > 0 ? windows[^1] / windows[0] : null;
+    }
+
+    private static long MixedUnit(WorkState s)
+    {
+        s.Round++;
+        return (s.Round % 3) switch { 0 => MandelbrotUnit(s), 1 => PrimeSieveUnit(s), _ => AesUnit(s) };
+    }
+
+    private sealed class WorkState : IDisposable
     {
         public readonly bool[] Sieve = new bool[250_000];
         public readonly byte[] Data = RandomNumberGenerator.GetBytes(64 * 1024);
         public readonly byte[] Hash = new byte[32];
+        public readonly byte[] Text = CompressibleText(64 * 1024);
+        public readonly MemoryStream Packed = new(64 * 1024);
+        public readonly byte[] Compressed;
+        public readonly byte[] Unpacked = new byte[64 * 1024];
+        public readonly AesGcm Aes = new(RandomNumberGenerator.GetBytes(32), 16);
+        public readonly byte[] Nonce = new byte[12];
+        public readonly byte[] Tag = new byte[16];
+        public readonly byte[] Cipher = new byte[64 * 1024];
         public double Sink;
+        public long Round;
+
+        public WorkState()
+        {
+            using var ms = new MemoryStream();
+            using (var z = new System.IO.Compression.DeflateStream(ms, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+                z.Write(Text);
+            Compressed = ms.ToArray();
+        }
+
+        public void Dispose()
+        {
+            Aes.Dispose();
+            Packed.Dispose();
+        }
+    }
+
+    /// <summary>Text-ähnliche, gut komprimierbare Daten (deterministisch).</summary>
+    private static byte[] CompressibleText(int size)
+    {
+        string[] words = ["ultimate", "windows", "control", "benchmark", "prozessor", "speicher", "daten", "leistung", "test", "system", "datei", "netzwerk"];
+        var rng = new Random(42);
+        var sb = new System.Text.StringBuilder(size + 32);
+        while (sb.Length < size) sb.Append(words[rng.Next(words.Length)]).Append(rng.Next(10) == 0 ? ".\n" : " ");
+        return System.Text.Encoding.ASCII.GetBytes(sb.ToString(0, size));
+    }
+
+    private static long CompressUnit(WorkState s)
+    {
+        s.Packed.SetLength(0);
+        using (var z = new System.IO.Compression.DeflateStream(s.Packed, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+            z.Write(s.Text);
+        s.Sink += s.Packed.Length;
+        return s.Packed.Length;
+    }
+
+    private static long DecompressUnit(WorkState s)
+    {
+        using var input = new MemoryStream(s.Compressed, writable: false);
+        using var z = new System.IO.Compression.DeflateStream(input, System.IO.Compression.CompressionMode.Decompress);
+        var total = 0;
+        int read;
+        while ((read = z.Read(s.Unpacked, total, s.Unpacked.Length - total)) > 0 && total < s.Unpacked.Length) total += read;
+        s.Sink += total;
+        return total;
+    }
+
+    private static long AesUnit(WorkState s)
+    {
+        s.Nonce[0]++;
+        s.Aes.Encrypt(s.Nonce, s.Data, s.Cipher, s.Tag);
+        s.Sink += s.Tag[0];
+        return s.Tag[1];
+    }
+
+    /// <summary>Kleiner Raytracer (32×32 Pixel, drei Kugeln, diffuse Beleuchtung) – rendering-typische Gleitkommalast.</summary>
+    private static long RenderUnit(WorkState s)
+    {
+        const int size = 32;
+        ReadOnlySpan<double> spheres = [0, 0, -3, 1, 1.5, 0.5, -4, 0.7, -1.4, -0.3, -2.5, 0.6];
+        double lx = 0.577, ly = 0.577, lz = 0.577;
+        long lit = 0;
+        for (var py = 0; py < size; py++)
+            for (var px = 0; px < size; px++)
+            {
+                double dx = (px - size / 2.0) / size, dy = (py - size / 2.0) / size, dz = -1;
+                var inv = 1 / Math.Sqrt(dx * dx + dy * dy + dz * dz);
+                dx *= inv; dy *= inv; dz *= inv;
+                var best = double.MaxValue;
+                var hit = -1;
+                for (var i = 0; i < spheres.Length; i += 4)
+                {
+                    double ox = -spheres[i], oy = -spheres[i + 1], oz = -spheres[i + 2], r = spheres[i + 3];
+                    var b = ox * dx + oy * dy + oz * dz;
+                    var c = ox * ox + oy * oy + oz * oz - r * r;
+                    var disc = b * b - c;
+                    if (disc < 0) continue;
+                    var t = -b - Math.Sqrt(disc);
+                    if (t > 0 && t < best) { best = t; hit = i; }
+                }
+                if (hit < 0) continue;
+                double hx = dx * best - spheres[hit], hy = dy * best - spheres[hit + 1], hz = dz * best - spheres[hit + 2];
+                var n = 1 / Math.Sqrt(hx * hx + hy * hy + hz * hz);
+                var shade = Math.Max(0, (hx * lx + hy * ly + hz * lz) * n);
+                lit += (long)(shade * 255);
+            }
+        s.Sink += lit;
+        return lit;
     }
 
     private static double Measure(Func<WorkState, long> unit, int threads, double seconds, CancellationToken ct)
@@ -88,7 +288,7 @@ public sealed class BenchmarkService(HistoryDatabase db)
         var duration = TimeSpan.FromSeconds(seconds);
         var workers = Enumerable.Range(0, threads).Select(i => new Thread(() =>
         {
-            var st = new WorkState();
+            using var st = new WorkState();
             unit(st); // Aufwärmen (JIT, Caches)
             long n = 0;
             while (stop.Elapsed < duration && !ct.IsCancellationRequested) { unit(st); n++; }
@@ -159,7 +359,9 @@ public sealed class BenchmarkService(HistoryDatabase db)
 
         progress?.Report(new BenchmarkProgress("Kopierbandbreite", 5));
         var copyGbs = CopyBandwidth(bytes, ct);
-        progress?.Report(new BenchmarkProgress("Lesebandbreite", 40));
+        progress?.Report(new BenchmarkProgress("Schreibbandbreite", 30));
+        var writeGbs = WriteBandwidth(bytes, ct);
+        progress?.Report(new BenchmarkProgress("Lesebandbreite", 50));
         var readGbs = ReadBandwidth(bytes, ct);
         progress?.Report(new BenchmarkProgress("Latenz (Zufallszugriffe)", 70));
         var latencyNs = Latency(bytes, ct);
@@ -169,8 +371,9 @@ public sealed class BenchmarkService(HistoryDatabase db)
         return Save(new BenchmarkRun(KindMemory, DateTime.Now, score,
         [
             new("Kopieren", Math.Round(copyGbs, 1), "GB/s"),
-            new("Lesen", Math.Round(readGbs, 1), "GB/s"),
-            new("Latenz", Math.Round(latencyNs, 1), "ns"),
+            new(MetricRamRead, Math.Round(readGbs, 1), "GB/s"),
+            new("Schreiben", Math.Round(writeGbs, 1), "GB/s"),
+            new(MetricRamLatency, Math.Round(latencyNs, 1), "ns"),
         ], $"Testgröße {Format.Bytes((ulong)bytes)} · alle Kerne für Bandbreite, 1 Kern für Latenz"));
     }
 
@@ -194,6 +397,26 @@ public sealed class BenchmarkService(HistoryDatabase db)
             // Kopieren bewegt jedes Byte zweimal (lesen + schreiben).
             best = Math.Max(best, 2.0 * chunk * threads / sw.Elapsed.TotalSeconds / 1e9);
         }
+        return best;
+    }
+
+    private static double WriteBandwidth(long bytes, CancellationToken ct)
+    {
+        var data = new long[bytes / 8];
+        var threads = Math.Min(Environment.ProcessorCount, 16);
+        var chunk = data.Length / threads;
+        data.AsSpan().Fill(1); // Seiten anfassen
+        var best = 0.0;
+        for (var round = 0; round < 3; round++)
+        {
+            ct.ThrowIfCancellationRequested();
+            var value = round + 2L;
+            var sw = Stopwatch.StartNew();
+            Parallel.For(0, threads, new ParallelOptions { MaxDegreeOfParallelism = threads }, i => data.AsSpan(i * chunk, chunk).Fill(value));
+            sw.Stop();
+            best = Math.Max(best, (double)chunk * threads * 8 / sw.Elapsed.TotalSeconds / 1e9);
+        }
+        GC.KeepAlive(data);
         return best;
     }
 
@@ -260,7 +483,24 @@ public sealed class BenchmarkService(HistoryDatabase db)
             .Select(d => new DiskTarget(d.RootDirectory.FullName, $"{d.Name} {d.VolumeLabel}".Trim(), (ulong)d.AvailableFreeSpace))
             .ToList();
 
+    /// <summary>Testgröße und Dauer der Zufallszugriffe je Modus (Quick 256 MB/2 s, Normal 1 GB/4 s, Extended 4 GB/8 s).</summary>
+    public static (long SizeBytes, int RandomSeconds) DiskModeParameters(DiskTestMode mode) => mode switch
+    {
+        DiskTestMode.Quick => (256L * 1024 * 1024, 2),
+        DiskTestMode.Extended => (4096L * 1024 * 1024, 8),
+        _ => (1024L * 1024 * 1024, 4),
+    };
+
+    public BenchmarkRun RunDisk(string root, DiskTestMode mode, IProgress<BenchmarkProgress>? progress, CancellationToken ct)
+    {
+        var (size, seconds) = DiskModeParameters(mode);
+        return RunDisk(root, size, progress, ct, seconds, mode.ToString());
+    }
+
     public BenchmarkRun RunDisk(string root, long sizeBytes, IProgress<BenchmarkProgress>? progress, CancellationToken ct)
+        => RunDisk(root, sizeBytes, progress, ct, 4, null);
+
+    private BenchmarkRun RunDisk(string root, long sizeBytes, IProgress<BenchmarkProgress>? progress, CancellationToken ct, int randomSeconds, string? modeName)
     {
         var drive = new DriveInfo(root);
         if (!drive.IsReady || drive.DriveType != DriveType.Fixed)
@@ -297,19 +537,25 @@ public sealed class BenchmarkService(HistoryDatabase db)
                 progress?.Report(new BenchmarkProgress("Sequentiell lesen", 35));
                 seqRead = Sequential(h, buffer, sizeBytes, write: false, ct, p => progress?.Report(new("Sequentiell lesen", 35 + p * 30)));
                 progress?.Report(new BenchmarkProgress("4K zufällig lesen", 65));
-                rndRead = Random4K(h, buffer[..small], sizeBytes, write: false, TimeSpan.FromSeconds(4), ct);
+                rndRead = Random4K(h, buffer[..small], sizeBytes, write: false, TimeSpan.FromSeconds(randomSeconds), ct);
                 progress?.Report(new BenchmarkProgress("4K zufällig schreiben", 82));
-                rndWrite = Random4K(h, buffer[..small], sizeBytes, write: true, TimeSpan.FromSeconds(4), ct);
+                rndWrite = Random4K(h, buffer[..small], sizeBytes, write: true, TimeSpan.FromSeconds(randomSeconds), ct);
             }
-            metrics.Add(new("Sequentiell lesen", Math.Round(seqRead / 1e6), "MB/s"));
+            metrics.Add(new(MetricDiskSeqRead, Math.Round(seqRead / 1e6), "MB/s"));
             metrics.Add(new("Sequentiell schreiben", Math.Round(seqWrite / 1e6), "MB/s"));
-            metrics.Add(new("4K zufällig lesen (QD1)", Math.Round(rndRead), "IOPS"));
+            metrics.Add(new(MetricDisk4kRead, Math.Round(rndRead), "IOPS"));
             metrics.Add(new("4K zufällig schreiben (QD1)", Math.Round(rndWrite), "IOPS"));
             metrics.Add(new("4K lesen", Math.Round(rndRead * small / 1e6, 1), "MB/s"));
+            metrics.Add(new("4K schreiben", Math.Round(rndWrite * small / 1e6, 1), "MB/s"));
+            if (rndRead > 0) metrics.Add(new("Zugriffszeit (lesen)", Math.Round(1000.0 / rndRead, 3), "ms"));
+            if (rndWrite > 0) metrics.Add(new("Zugriffszeit (schreiben)", Math.Round(1000.0 / rndWrite, 3), "ms"));
+            // v1.3: Laufwerk eindeutig kennzeichnen (Performance Score wertet nur das Systemlaufwerk).
+            if (UltimateX.Core.Analysis.DiskRunIdentity.Encode(drive.Name) is { } driveId)
+                metrics.Add(new(UltimateX.Core.Analysis.DiskRunIdentity.MetricDriveId, driveId, ""));
             var score = Math.Round(Math.Sqrt(seqRead / 1e6 * seqWrite / 1e6) + Math.Sqrt(rndRead * rndWrite) / 10);
             progress?.Report(new BenchmarkProgress("Fertig", 100));
             return Save(new BenchmarkRun(KindDisk, DateTime.Now, score, metrics,
-                $"{drive.Name} · Testdatei {Format.Bytes((ulong)sizeBytes)} · ohne Windows-Cache"));
+                $"{drive.Name} · Testdatei {Format.Bytes((ulong)sizeBytes)} · ohne Windows-Cache" + (modeName is null ? "" : $" · Modus {modeName}")));
         }
         finally
         {
@@ -354,12 +600,15 @@ public sealed class BenchmarkService(HistoryDatabase db)
 
     private BenchmarkRun Save(BenchmarkRun run)
     {
-        db.AddBenchmark(new BenchmarkRecord(run.Time, run.Kind, run.Score, JsonSerializer.Serialize(new StoredRun(run.Metrics, run.Note))));
+        db.AddBenchmark(new BenchmarkRecord(run.Time, run.Kind, run.Score, JsonSerializer.Serialize(new StoredRun(run.Metrics, run.Note, run.Telemetry))));
         AppLog.Info("Benchmark", $"{run.Kind}-Benchmark abgeschlossen", $"Punkte {run.Score}");
         return run;
     }
 
-    private sealed record StoredRun(IReadOnlyList<BenchmarkMetric> Metrics, string? Note);
+    private sealed record StoredRun(IReadOnlyList<BenchmarkMetric> Metrics, string? Note, LoadSummary? Telemetry = null);
+
+    /// <summary>Speichert einen extern erzeugten Lauf (GPU, Netzwerk, Complete, RAM-Test) im gemeinsamen Verlauf.</summary>
+    public BenchmarkRun Record(BenchmarkRun run) => Save(run);
 
     public IReadOnlyList<BenchmarkRun> History()
     {
@@ -368,7 +617,7 @@ public sealed class BenchmarkService(HistoryDatabase db)
         {
             StoredRun? s = null;
             try { s = JsonSerializer.Deserialize<StoredRun>(r.Details); } catch (JsonException) { }
-            list.Add(new BenchmarkRun(r.Kind, r.Time, r.Score, s?.Metrics ?? [], s?.Note));
+            list.Add(new BenchmarkRun(r.Kind, r.Time, r.Score, s?.Metrics ?? [], s?.Note, s?.Telemetry));
         }
         return list;
     }

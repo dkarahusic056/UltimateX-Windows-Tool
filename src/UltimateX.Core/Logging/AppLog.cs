@@ -51,7 +51,19 @@ public static class AppLog
         => Write(LogLevel.Warning, LogCategory.General, action, message, details);
 
     public static void Error(string action, string message, Exception? ex = null)
-        => Write(LogLevel.Error, LogCategory.General, action, message, ex?.GetType().Name + ": " + ex?.Message);
+        => Write(LogLevel.Error, LogCategory.General, action, message, ex is null ? null : ex.GetType().Name + ": " + ex.Message + Origin(ex));
+
+    /// <summary>Die obersten Aufrufstellen (nur Methodennamen, max. 5 Zeilen) – damit Fehler im lokalen Protokoll auffindbar sind.</summary>
+    private static string Origin(Exception ex)
+    {
+        var inner = ex;
+        while (inner.InnerException is not null && inner is AggregateException or System.Reflection.TargetInvocationException) inner = inner.InnerException;
+        var frames = (inner.StackTrace ?? "").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(l => l.StartsWith("at ", StringComparison.Ordinal) ? l[3..] : l)
+            .Select(l => l.IndexOf(" in ", StringComparison.Ordinal) is var i and > 0 ? l[..i] : l) // keine Quellpfade
+            .Take(5).ToList();
+        return frames.Count == 0 ? "" : " @ " + string.Join(" <- ", frames);
+    }
 
     /// <summary>Security-Events: AuthFailure, AdminOperation, DriverInstall, IntegrityFailure, ReportExport …</summary>
     public static void Security(string action, string message, LogLevel level = LogLevel.Info, string? details = null)

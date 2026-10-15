@@ -55,6 +55,10 @@ public partial class App : Application
 
         ThemeManager.Apply(AppServices.Settings.Theme);
 
+        // v1.3: eigene Laufzeit-Mitschrift (PC Lifetime) – Start/Stop + Heartbeat alle 5 Minuten.
+        AppServices.Uptime.Start();
+        SystemEvents.SessionEnding += (_, _) => AppServices.Uptime.Stop();
+
         // Security Session endet sofort bei PC-Sperre, Abmeldung oder Benutzerwechsel (§59).
         SystemEvents.SessionSwitch += (_, args) =>
         {
@@ -70,6 +74,8 @@ public partial class App : Application
         _ = Task.Run(() => AppServices.History.Prune());
 
         MonitorHub.Start();
+        FactsCollector.InstallLoadSampler(); // v1.2: Sensorwerte für Benchmark-Telemetrie
+        OverlayController.Initialize();       // v1.3: In-Game-Overlay (Hotkey, Werte)
 
         var main = new MainViewModel();
         AppServices.Notifications.FallbackRequested += (title, text) => Dispatcher.InvokeAsync(() => main.ShowToast($"{title}: {text}"));
@@ -80,6 +86,11 @@ public partial class App : Application
         if (startMinimized) window.WindowState = WindowState.Minimized;
         window.Show();
 
+        // v1.3: Backup-Zeitpläne und Überwachung im Infobereich.
+        AppServices.Backup.StartScheduler();
+        TrayMonitor.BackupOverdueProvider = AppServices.Backup.GetOverdueProfileNames;
+        TrayMonitor.Start(window);
+
         if (!AppServices.Settings.FirstStartCompleted)
         {
             // First Start (§99): kurze Erklärung; die Erkennung läuft bereits im Dashboard.
@@ -88,7 +99,8 @@ public partial class App : Application
                 "• Die App läuft ohne Administratorrechte. Für Reparaturen fragt Windows gezielt per UAC.\n" +
                 "• Sensible Daten (MAC, IP, Seriennummern) werden maskiert.\n" +
                 "• Keine Telemetrie. Netzwerkzugriffe gibt es nur für die Update-Prüfung (Windows Update, winget – abschaltbar in den Einstellungen) " +
-                "sowie wenn Sie selbst einen Speedtest starten oder die öffentliche IP abfragen.");
+                "sowie wenn Sie selbst einen Speedtest starten oder die öffentliche IP abfragen.\n" +
+                "• Neu in 1.3: Spiele-Anforderungen online suchen (Steam-Shop, ohne Konto) und speedtest.ch in der App – nur, wenn Sie es selbst starten.");
             AppServices.Settings.FirstStartCompleted = true;
             AppServices.SaveSettings();
         }
@@ -115,6 +127,11 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        TrayMonitor.Stop();
+        OverlayController.Shutdown();
+        AppServices.Fps.Dispose();
+        AppServices.Backup.StopScheduler();
+        AppServices.Uptime.Stop();
         MonitorHub.Stop();
         AppServices.Monitor.Dispose();
         AppLog.Info("App", "Beendet");

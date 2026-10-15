@@ -22,6 +22,9 @@ public sealed record PcReportOptions
     public bool Benchmarks { get; init; } = true;
     public bool CrashAnalysis { get; init; } = true;
 
+    /// <summary>v1.2: Bewertungen (Performance Score, Gaming Score, RAM-Test, Laufwerke, Netzwerk) und Empfehlungen.</summary>
+    public bool Analysis { get; init; } = true;
+
     /// <summary>
     /// Datenschutzmodus (Standard: AN): maskiert öffentliche/lokale IP-Adressen, MAC-Adressen, Benutzer- und Computername,
     /// Seriennummern sowie Gateway/DNS. Abschalten erfordert in der App eine Windows-Hello-Bestätigung.
@@ -54,4 +57,16 @@ public sealed record PcReportData
     public IReadOnlyList<BenchmarkRun> Benchmarks { get; init; } = [];
     public CrashReport? CrashReport { get; init; }
     public IReadOnlyList<SmartDisk> Smart { get; init; } = [];
+    public ReportAnalysis? Analysis { get; init; }
 }
+
+/// <summary>v1.2: Bewertungen und Empfehlungen für den Bericht (keine Passwörter oder sonstigen Geheimnisse).</summary>
+public sealed record ReportAnalysis(
+    Core.Analysis.PerformanceResult Performance,
+    int? GamingScore,
+    int? NetworkScore,
+    string? MemoryTest,
+    Core.Common.DataState MemoryTestState,
+    IReadOnlyList<(string Drive, string Verdict, Core.Common.DataState State)> Drives,
+    IReadOnlyList<Core.Analysis.Finding> Problems,
+    IReadOnlyList<string> Recommendations);

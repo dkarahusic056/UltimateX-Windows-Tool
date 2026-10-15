@@ -12,7 +12,7 @@
             <TextBlock Text="{Binding Description}" Style="{StaticResource Text.MutedWrap}" Margin="0,6,0,10" />
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding Score}" FontSize="34" FontWeight="Bold" Foreground="{DynamicResource Brush.Accent}" />
-                <TextBlock Text="Punkte" Style="{StaticResource Text.Muted}" VerticalAlignment="Bottom" Margin="6,0,0,8" />
+                <TextBlock Text="{Binding Unit}" Style="{StaticResource Text.Muted}" VerticalAlignment="Bottom" Margin="6,0,0,8" />
             </StackPanel>
             <TextBlock Text="{Binding When}" Style="{StaticResource Text.Muted}" />
             <TextBlock Text="{Binding Comparison}" Style="{StaticResource Text.MutedWrap}" Visibility="{Binding Comparison, Converter={StaticResource NullToVis}}" />
@@ -30,6 +30,9 @@
             </ItemsControl>
             <TextBlock Text="{Binding Note}" Style="{StaticResource Text.MutedWrap}" Foreground="{DynamicResource Brush.Warning}" Margin="0,6,0,0"
                        Visibility="{Binding Note, Converter={StaticResource NullToVis}}" />
+            <!-- v1.3: welcher Lauf in den Performance Score eingeht (Datenträger: immer das Systemlaufwerk) -->
+            <TextBlock Text="{Binding ScoreHint}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" Foreground="{DynamicResource Brush.Accent}" Margin="0,6,0,0"
+                       Visibility="{Binding ScoreHint, Converter={StaticResource NullToVis}}" />
         </StackPanel>
     </DataTemplate>
 
@@ -39,9 +42,40 @@
                 <ctl:ChamferBorder Style="{StaticResource StatusBar}" Visibility="{Binding StatusMessage, Converter={StaticResource NullToVis}}">
                     <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource Text.Wrap}" />
                 </ctl:ChamferBorder>
-                <ctl:ChamferBorder Style="{StaticResource Card.Notice}">
-                    <TextBlock Style="{StaticResource Text.Wrap}"
-                               Text="Alle Tests laufen lokal und ohne Zusatzsoftware. Die Punktzahlen dienen dem Vergleich mit früheren Läufen auf diesem PC (z. B. nach Treiber-Updates oder Aufrüstung) – nicht dem Vergleich mit Online-Ranglisten." />
+
+                <!-- COMPLETE BENCHMARK + ULTIMATE X PERFORMANCE SCORE (§9) -->
+                <ctl:ChamferBorder Background="{DynamicResource Brush.Hero}" BorderBrush="{DynamicResource Brush.CardBorder}" BorderThickness="1"
+                                   Chamfer="20" AccentBrush="{Binding TotalState, Converter={StaticResource StateBrush}}" AccentLength="70" Padding="22,18" Margin="0,0,0,12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="380" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="ULTIMATE X PERFORMANCE SCORE" Style="{StaticResource Text.CardHeader}" Foreground="{DynamicResource Brush.AccentHot}" />
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding TotalScore}" Style="{StaticResource Text.Display}" FontSize="40" Foreground="{Binding TotalState, Converter={StaticResource StateBrush}}" />
+                                <TextBlock Text="{Binding TierText}" Style="{StaticResource Text.Display}" FontSize="20" VerticalAlignment="Bottom" Margin="16,0,0,8" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding CompleteWhen}" Style="{StaticResource Text.Muted}" Visibility="{Binding CompleteWhen, Converter={StaticResource NullToVis}}" />
+                            <ItemsControl ItemsSource="{Binding ComponentScores}" ItemTemplate="{StaticResource ScoreRowTemplate}" MaxWidth="520" HorizontalAlignment="Left" Margin="0,10,0,0" Width="520" />
+                            <TextBlock Text="{Binding StorageScoreSource}" Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,4,0,0" MaxWidth="560" HorizontalAlignment="Left"
+                                       Visibility="{Binding StorageScoreSource, Converter={StaticResource NullToVis}}" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,8,0,0" MaxWidth="560" HorizontalAlignment="Left"
+                                       Text="Skala geschätzt (ESTIMATED): 100 Punkte ≈ aktuelle Spitzenklasse für Endanwender (Stand 2026), logarithmisch – doppelte Leistung bringt immer gleich viele Punkte. Einstufung: ENTRY LEVEL · STANDARD · GAMING · HIGH-END GAMING · ENTHUSIAST." />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                            <Button Style="{StaticResource Button.Primary}" Height="58" HorizontalAlignment="Stretch" Command="{Binding RunCompleteCommand}"
+                                    IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE9D9;" Style="{StaticResource Text.Icon}" FontSize="20" Margin="0,0,12,0" />
+                                    <TextBlock Text="START COMPLETE BENCHMARK" FontFamily="{StaticResource Font.DisplayCondensed}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CompleteSpeedtest}" Content="inkl. Internet-Speedtest" Margin="0,10,0,6" />
+                            <ItemsControl ItemsSource="{Binding CompleteSteps}" ItemTemplate="{StaticResource StepRowTemplate}" />
+                        </StackPanel>
+                    </Grid>
                 </ctl:ChamferBorder>
 
                 <ctl:ChamferBorder Style="{StaticResource Card}" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
@@ -54,33 +88,154 @@
                     </DockPanel>
                 </ctl:ChamferBorder>
 
-                <UniformGrid Columns="3">
-                    <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                <ctl:ChamferBorder Style="{StaticResource Card.Notice}">
+                    <TextBlock Style="{StaticResource Text.Wrap}"
+                               Text="Alle Tests laufen lokal und ohne Zusatzsoftware. Werte, die kein Sensor liefert (z. B. Leistungsaufnahme), erscheinen nicht bzw. als N/A – es wird nichts geschätzt. Ein 3D-Spieletest (FPS, 1 % Low) ist nicht enthalten." />
+                </ctl:ChamferBorder>
+
+                <WrapPanel>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="400" VerticalAlignment="Stretch">
                         <DockPanel>
-                            <Button DockPanel.Dock="Bottom" Style="{StaticResource Button.Primary}" Content="CPU testen" Command="{Binding RunCpuCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"
-                                    IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CpuSustained}" Content="Dauerlast (2 min, Throttling-Erkennung)" Margin="0,0,0,8" />
+                                <Button Style="{StaticResource Button.Primary}" Content="CPU testen" Command="{Binding RunCpuCommand}" HorizontalAlignment="Left"
+                                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            </StackPanel>
                             <ContentPresenter Content="{Binding Cpu}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
                         </DockPanel>
                     </ctl:ChamferBorder>
-                    <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="400" VerticalAlignment="Stretch">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding GpuStability}" Content="Stabilitätstest (60 s)" Margin="0,0,0,8" />
+                                <Button Style="{StaticResource Button.Primary}" Content="GPU testen" Command="{Binding RunGpuCommand}" HorizontalAlignment="Left"
+                                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            </StackPanel>
+                            <ContentPresenter Content="{Binding Gpu}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
+                        </DockPanel>
+                    </ctl:ChamferBorder>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="400" VerticalAlignment="Stretch">
                         <DockPanel>
                             <Button DockPanel.Dock="Bottom" Style="{StaticResource Button.Primary}" Content="RAM testen" Command="{Binding RunMemoryCommand}" HorizontalAlignment="Left" Margin="0,12,0,0"
                                     IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
                             <ContentPresenter Content="{Binding Memory}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
                         </DockPanel>
                     </ctl:ChamferBorder>
-                    <ctl:ChamferBorder Style="{StaticResource Card}" VerticalAlignment="Stretch">
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="400" VerticalAlignment="Stretch">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
                                 <ComboBox ItemsSource="{Binding Drives}" SelectedItem="{Binding SelectedDrive}" Margin="0,0,0,6" />
-                                <ComboBox ItemsSource="{Binding Sizes}" SelectedItem="{Binding SelectedSize}" Margin="0,0,0,8" />
+                                <ComboBox ItemsSource="{Binding DiskModes}" SelectedItem="{Binding SelectedDiskMode}" Margin="0,0,0,8" />
                                 <Button Style="{StaticResource Button.Primary}" Content="Datenträger testen" Command="{Binding RunDiskCommand}" HorizontalAlignment="Left"
                                         IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
                             </StackPanel>
                             <ContentPresenter Content="{Binding Disk}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
                         </DockPanel>
                     </ctl:ChamferBorder>
-                </UniformGrid>
+                    <ctl:ChamferBorder Style="{StaticResource Card}" Width="400" VerticalAlignment="Stretch">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                                <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding NetworkSpeedtest}" Content="inkl. Speedtest (Download/Upload)" Margin="0,0,0,8" />
+                                <Button Style="{StaticResource Button.Primary}" Content="Netzwerk testen" Command="{Binding RunNetworkCommand}" HorizontalAlignment="Left"
+                                        IsEnabled="{Binding IsRunning, Converter={StaticResource InvBool}}" />
+                            </StackPanel>
+                            <ContentPresenter Content="{Binding Net}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
+                        </DockPanel>
+                    </ctl:ChamferBorder>
+                </WrapPanel>
+
+                <!-- GEEKBENCH (v1.3): Fremdprogramm – wird nicht mitgeliefert; nur Start eines installierten Geekbench + manuelle Eingabe -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="24" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ContentPresenter Content="{Binding GeekbenchResult}" ContentTemplate="{StaticResource BenchmarkCardTemplate}" />
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="GEEKBENCH" Style="{StaticResource Text.CardHeader}" Foreground="{DynamicResource Brush.AccentHot}" />
+                            <TextBlock Text="{Binding GeekbenchStatus}" Style="{StaticResource Text.MutedWrap}" Margin="0,2,0,8" />
+                            <WrapPanel>
+                                <Button Style="{StaticResource Button.Primary}" Content="Geekbench starten" Command="{Binding LaunchGeekbenchCommand}" Margin="0,0,8,8" />
+                                <Button Content="Offizielle Download-Seite öffnen" Command="{Binding OpenGeekbenchDownloadCommand}" Margin="0,0,8,8"
+                                        Visibility="{Binding GeekbenchInstalled, Converter={StaticResource InvBoolToVis}}" />
+                            </WrapPanel>
+                            <TextBlock Text="Ergebnis eintragen" Style="{StaticResource Text.H3}" Margin="0,6,0,6" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="110" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Version" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding GeekbenchVersions}" SelectedItem="{Binding GeekbenchVersion}" Margin="0,2">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock><Run Text="Geekbench " /><Run Text="{Binding Mode=OneWay}" /></TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Grid.Row="1" Text="Single-Core" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding GeekbenchSingle, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" />
+                                <TextBlock Grid.Row="2" Text="Multi-Core" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding GeekbenchMulti, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" />
+                                <TextBlock Grid.Row="3" Text="GPU (optional)" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding GeekbenchGpu, UpdateSourceTrigger=PropertyChanged}" Margin="0,2" />
+                                <ComboBox Grid.Row="3" Grid.Column="2" ItemsSource="{Binding GeekbenchGpuApis}" SelectedItem="{Binding GeekbenchGpuApi}" Margin="8,2,0,2" />
+                            </Grid>
+                            <Button Style="{StaticResource Button.Primary}" Content="Ergebnis speichern" Command="{Binding SaveGeekbenchCommand}" HorizontalAlignment="Left" Margin="0,10,0,0" />
+                            <TextBlock Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,10,0,0"
+                                       Text="Hinweis: Die kostenlose Geekbench-Version lädt Ergebnisse selbst in den Geekbench Browser von Primate Labs hoch – das macht Geekbench, nicht ULTIMATE X. ULTIMATE X liefert Geekbench nicht mit, lädt nichts herunter und nichts hoch. Geekbench-Werte haben eine eigene Skala und fließen nicht in den ULTIMATE X PERFORMANCE SCORE ein." />
+                        </StackPanel>
+                    </Grid>
+                </ctl:ChamferBorder>
+
+                <!-- EXPECTED VS ACTUAL (§10) -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="EXPECTED VS ACTUAL PERFORMANCE" Style="{StaticResource Text.CardHeader}" Foreground="{DynamicResource Brush.AccentHot}" />
+                        <TextBlock Text="Erwartete Werte stammen aus Herstellerangaben bzw. der Schnittstelle und sind Schätzungen (ESTIMATED)." Style="{StaticResource Text.MutedWrap}" Margin="0,2,0,10" />
+                        <ItemsControl ItemsSource="{Binding Expected}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ctl:ChamferBorder Style="{StaticResource Card.Inner}" Margin="0,0,0,6" AccentBrush="{Binding State, Converter={StaticResource StateBrush}}">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="170" />
+                                                    <ColumnDefinition Width="170" />
+                                                    <ColumnDefinition Width="170" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Component}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                <TextBlock Grid.Column="1"><Run Text="Expected: " Foreground="{DynamicResource Brush.TextMuted}" /><Run Text="{Binding Expected, Mode=OneWay}" /></TextBlock>
+                                                <TextBlock Grid.Column="2"><Run Text="Measured: " Foreground="{DynamicResource Brush.TextMuted}" /><Run Text="{Binding Measured, Mode=OneWay}" /></TextBlock>
+                                                <TextBlock Grid.Column="3" Text="{Binding Deviation}" FontWeight="SemiBold" Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+                                            </Grid>
+                                            <TextBlock Text="{Binding Causes}" Style="{StaticResource Text.MutedWrap}" FontSize="11" Margin="0,4,0,0" />
+                                        </StackPanel>
+                                    </ctl:ChamferBorder>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ctl:ChamferBorder>
+
+                <!-- BOTTLENECK ANALYZER (§11) -->
+                <ctl:ChamferBorder Style="{StaticResource Card}">
+                    <StackPanel>
+                        <TextBlock Text="BOTTLENECK ANALYZER" Style="{StaticResource Text.CardHeader}" Foreground="{DynamicResource Brush.AccentHot}" />
+                        <TextBlock Text="{Binding BottleneckSummary}" Style="{StaticResource Text.Wrap}" FontWeight="SemiBold" Margin="0,4,0,10" />
+                        <ItemsControl ItemsSource="{Binding Bottlenecks}" ItemTemplate="{StaticResource FindingTemplate}" />
+                    </StackPanel>
+                </ctl:ChamferBorder>
 
                 <ctl:ChamferBorder Style="{StaticResource Card}">
                     <StackPanel>

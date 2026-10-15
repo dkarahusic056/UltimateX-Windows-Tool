@@ -43,6 +43,50 @@ public enum AllowedCommand
     // --- Absturzanalyse (§103): Minidumps liegen in einem nur für Administratoren lesbaren Ordner ---
     ReadMinidumps,
     AnalyzeMinidump,
+
+    // --- v1.2 New PC Setup: Installation ausschließlich über den Windows-Paket-Manager (Benutzer; Installer fordern selbst UAC an) ---
+    WingetShow,
+    WingetInstall,
+    WingetInstallStore,
+
+    // --- v1.2 Microsoft 365 Apps über das offizielle Office Deployment Tool (setup.exe nach Signaturprüfung, UAC) ---
+    OfficeDeploy,
+
+    // --- v1.2 Open Source Security: ClamAV (zusätzlicher Scanner, ersetzt Defender nicht) ---
+    ClamAvVersion,
+    ClamAvUpdate,
+    ClamAvScan,
+    ClamAvScanQuarantine,
+
+    // --- v1.3 Backup-Center (Admin, über Helper) – Umsetzung: CommandCatalog.Backup.cs ---
+    BackupSystemImage,
+    BackupImageVersions,
+    DriverExport,
+    RecoveryDriveCreate,
+
+    // --- v1.3 Netzwerk-Werkzeugkasten, Sicherheits-Check, Aufgabenplanung, Datenschutz – Umsetzung: CommandCatalog.Network.cs ---
+    DnsFlush,
+    IpRenew,
+    NetworkResetWinsock,
+    NetworkResetIp,
+    DnsSetStatic,
+    DnsSetDhcp,
+    Smb1Disable,
+    RdpDisable,
+    FirewallEnableAll,
+    ScheduledTaskDisable,
+    ScheduledTaskEnable,
+    PrivacySetMachine,
+
+    // --- v1.3 Zeitgesteuertes Herunterfahren/Neustarten (Benutzer) – Umsetzung: CommandCatalog.System.cs ---
+    ShutdownAt,
+    RestartAt,
+
+    // --- v1.3 Geekbench (nur ein bereits installiertes Programm starten) – Umsetzung: CommandCatalog.Tools.cs ---
+    GeekbenchLaunch,
+
+    // --- v1.3 NVIDIA-Grafiktreiber (offizieller Download, Authenticode „NVIDIA Corporation“, UAC durch die App) – CommandCatalog.Tools.cs ---
+    NvidiaDriverInstall,
 }
 
 /// <summary>Fest definierter, vollständig aufgelöster Befehl.</summary>
@@ -91,6 +135,20 @@ public static partial class CommandCatalog
     public static string WingetPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps", "winget.exe");
 
+    /// <summary>Feste Ablage des Office Deployment Tools und seiner Konfiguration (v1.2).</summary>
+    public static string OfficeSetupDirectory => Path.Combine(AppPaths.UserDataRoot, "setup", "office");
+    public static string OfficeSetupPath => Path.Combine(OfficeSetupDirectory, "setup.exe");
+    public static string OfficeConfigPath => Path.Combine(OfficeSetupDirectory, "configuration.xml");
+
+    /// <summary>ClamAV: Programmordner (Installation über winget) sowie eigene Datenbank/Quarantäne im Benutzerprofil.</summary>
+    public static string ClamAvDirectory => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "ClamAV");
+    public static string ClamScanPath => Path.Combine(ClamAvDirectory, "clamscan.exe");
+    public static string FreshClamPath => Path.Combine(ClamAvDirectory, "freshclam.exe");
+    public static string ClamAvDataRoot => Path.Combine(AppPaths.UserDataRoot, "clamav");
+    public static string ClamAvDatabaseDirectory => Path.Combine(ClamAvDataRoot, "db");
+    public static string ClamAvConfigPath => Path.Combine(ClamAvDataRoot, "freshclam.conf");
+    public static string ClamAvQuarantineDirectory => Path.Combine(ClamAvDataRoot, "quarantine");
+
     /// <summary>Fester Ablageort für ein verifiziertes App-Update (kein frei wählbarer Pfad).</summary>
     public static string AppUpdateMsiPath => Path.Combine(AppPaths.UserDataRoot, "updates", "UltimateX-update.msi");
 
@@ -138,9 +196,43 @@ public static partial class CommandCatalog
             AllowedCommand.AnalyzeMinidump => new(id, "", [], true, false, "Absturzabbild mit Debugger analysieren")
                 { IsInternal = true, Parameter = DumpName(parameter) },
 
-            _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Befehl ist nicht in der Allowlist."),
+            AllowedCommand.WingetShow => new(id, WingetPath,
+                ["show", "--id", WingetId(parameter), "--exact", "--source", "winget", "--accept-source-agreements", "--disable-interactivity"],
+                false, false, "Paketinformationen abrufen (winget)")
+                { Utf8Output = true },
+            AllowedCommand.WingetInstall => new(id, WingetPath,
+                ["install", "--id", WingetId(parameter), "--exact", "--source", "winget", "--silent",
+                 "--accept-source-agreements", "--accept-package-agreements", "--disable-interactivity"],
+                false, false, "Software installieren (winget)")
+                { Utf8Output = true },
+            AllowedCommand.WingetInstallStore => new(id, WingetPath,
+                ["install", "--id", StoreId(parameter), "--exact", "--source", "msstore", "--silent",
+                 "--accept-source-agreements", "--accept-package-agreements", "--disable-interactivity"],
+                false, false, "App aus dem Microsoft Store installieren (winget)")
+                { Utf8Output = true },
+
+            AllowedCommand.OfficeDeploy => new(id, OfficeSetupPath, ["/configure", OfficeConfigPath], true, true, "Microsoft 365 Apps installieren (Office Deployment Tool)"),
+
+            AllowedCommand.ClamAvVersion => new(id, ClamScanPath, ["--version"], false, false, "ClamAV-Version abfragen"),
+            AllowedCommand.ClamAvUpdate => new(id, FreshClamPath,
+                ["--config-file=" + ClamAvConfigPath, "--datadir=" + ClamAvDatabaseDirectory, "--stdout"], false, false, "ClamAV-Signaturen aktualisieren"),
+            AllowedCommand.ClamAvScan => new(id, ClamScanPath,
+                ["-r", "--database=" + ClamAvDatabaseDirectory, "--infected", "--stdout", "--max-filesize=200M", "--max-scansize=400M", ClamAvExcludeOwnData, ScanTarget(parameter)],
+                false, false, "Mit ClamAV prüfen"),
+            AllowedCommand.ClamAvScanQuarantine => new(id, ClamScanPath,
+                ["-r", "--database=" + ClamAvDatabaseDirectory, "--infected", "--stdout", "--max-filesize=200M", "--max-scansize=400M",
+                 ClamAvExcludeOwnData, "--move=" + ClamAvQuarantineDirectory, ScanTarget(parameter)],
+                false, false, "Mit ClamAV prüfen und Funde in Quarantäne verschieben"),
+
+            _ => BuildExtension(id, parameter) ?? throw new ArgumentOutOfRangeException(nameof(id), id, "Befehl ist nicht in der Allowlist."),
         };
     }
+
+    /// <summary>
+    /// Eigene ClamAV-Daten (Signaturen, Quarantäne, Verlauf) nie mitscannen – sonst würden bereits isolierte Funde bei jedem
+    /// Full Scan erneut gemeldet und innerhalb der Quarantäne verschoben. POSIX-Regex, passt auf „\“ und „/“.
+    /// </summary>
+    public const string ClamAvExcludeOwnData = @"--exclude-dir=UltimateX[\/]clamav";
 
     private static string Drive(string? parameter)
     {
@@ -161,6 +253,46 @@ public static partial class CommandCatalog
         if (parameter is null || !WingetIdRegex().IsMatch(parameter))
             throw new ArgumentException("Ungültige Paket-ID.", nameof(parameter));
         return parameter;
+    }
+
+    // Microsoft-Store-Produkt-IDs: 12 Zeichen, Großbuchstaben/Ziffern (z. B. 9NKSQGP7F2NH).
+    [GeneratedRegex(@"^[0-9A-Z]{12}$", RegexOptions.CultureInvariant)]
+    private static partial Regex StoreIdRegex();
+
+    private static string StoreId(string? parameter)
+    {
+        if (parameter is null || !StoreIdRegex().IsMatch(parameter))
+            throw new ArgumentException("Ungültige Store-ID.", nameof(parameter));
+        return parameter;
+    }
+
+    /// <summary>
+    /// Scanziel für ClamAV: vollständiger, existierender lokaler Pfad (Ordner, Datei oder Laufwerkswurzel).
+    /// Keine UNC-/Gerätepfade, keine Anführungszeichen oder Steuerzeichen, keine Optionen („-…“).
+    /// Die Übergabe erfolgt als eigenes Argument ohne Shell (ArgumentList).
+    /// </summary>
+    public static string ScanTarget(string? parameter)
+    {
+        if (string.IsNullOrWhiteSpace(parameter) || parameter.Length > 260 || parameter.StartsWith('-')
+            || parameter.Any(c => char.IsControl(c) || c is '"' or '*' or '?' or '<' or '>' or '|'))
+            throw new ArgumentException("Ungültiger Scanpfad.", nameof(parameter));
+        // UNC-/Gerätepfade in jeder Schreibweise (\\server, //server, \\?\, \\.\) ablehnen; nur vollständige lokale Pfade.
+        if (parameter.StartsWith(@"\\", StringComparison.Ordinal) || parameter.StartsWith("//", StringComparison.Ordinal)
+            || parameter.StartsWith(@"\/", StringComparison.Ordinal) || parameter.StartsWith(@"/\", StringComparison.Ordinal))
+            throw new ArgumentException("Netzwerk- und Gerätepfade werden nicht gescannt.", nameof(parameter));
+        if (!Path.IsPathFullyQualified(parameter))
+            throw new ArgumentException("Der Scanpfad muss vollständig sein (z. B. C:\\Ordner).", nameof(parameter));
+        string full;
+        try { full = Path.GetFullPath(parameter); }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException or System.Security.SecurityException)
+        {
+            throw new ArgumentException("Ungültiger Scanpfad.", nameof(parameter), ex);
+        }
+        if (full.StartsWith(@"\\", StringComparison.Ordinal))
+            throw new ArgumentException("Netzwerk- und Gerätepfade werden nicht gescannt.", nameof(parameter));
+        if (!Path.IsPathFullyQualified(full) || !(Directory.Exists(full) || File.Exists(full)))
+            throw new ArgumentException("Der Scanpfad existiert nicht.", nameof(parameter));
+        return full;
     }
 
     private static string DumpName(string? parameter)

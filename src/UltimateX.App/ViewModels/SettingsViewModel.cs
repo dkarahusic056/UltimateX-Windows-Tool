@@ -23,6 +23,9 @@ public sealed partial class SettingsViewModel : PageViewModel
 
     protected override Task LoadAsync() => Task.CompletedTask;
 
+    [RelayCommand]
+    private void OpenManual() => ShowResult(UriLauncher.OpenManual());
+
     private void Save([System.Runtime.CompilerServices.CallerMemberName] string? name = null)
     {
         AppServices.SaveSettings();

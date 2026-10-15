@@ -58,4 +58,60 @@
         <Setter Property="Padding" Value="12,8" />
         <Setter Property="Margin" Value="0,0,12,12" />
     </Style>
+
+    <!-- ===================== v1.2: Befund (PASS / WARNING / FAIL / N/A) ===================== -->
+    <DataTemplate x:Key="FindingTemplate">
+        <ctl:ChamferBorder Style="{StaticResource Card.Inner}" Margin="0,0,0,6" AccentBrush="{Binding State, Converter={StaticResource StateBrush}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="104" />
+                    <ColumnDefinition Width="190" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ctl:ChamferBorder Style="{StaticResource Badge}" BorderBrush="{Binding State, Converter={StaticResource StateBrush}}" VerticalAlignment="Top" HorizontalAlignment="Left">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Style="{StaticResource StatusDot}" Width="7" Height="7" Margin="0,0,6,0" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+                        <TextBlock Text="{Binding StatusText}" FontSize="10" FontWeight="SemiBold" Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+                    </StackPanel>
+                </ctl:ChamferBorder>
+                <TextBlock Grid.Column="1" Text="{Binding Area}" FontWeight="SemiBold" VerticalAlignment="Top" Margin="0,2,10,0" TextWrapping="Wrap" />
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="{Binding Value}" Style="{StaticResource Text.Wrap}" Margin="0,2,0,0" />
+                    <TextBlock Text="{Binding Advice}" Style="{StaticResource Text.MutedWrap}" FontSize="11"
+                               Visibility="{Binding Advice, Converter={StaticResource NullToVis}}" />
+                </StackPanel>
+            </Grid>
+        </ctl:ChamferBorder>
+    </DataTemplate>
+
+    <!-- Teilwertung mit Balken -->
+    <DataTemplate x:Key="ScoreRowTemplate">
+        <Grid Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="90" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="70" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <ProgressBar Grid.Column="1" Maximum="100" Value="{Binding Percent, Mode=OneWay}" Height="8" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="{Binding Text}" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold"
+                       Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+        </Grid>
+    </DataTemplate>
+
+    <!-- Ablaufschritt (Complete Benchmark, Setup) -->
+    <DataTemplate x:Key="StepRowTemplate">
+        <Grid Margin="0,3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="22" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="80" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Ellipse Style="{StaticResource StatusDot}" VerticalAlignment="Center" Fill="{Binding State, Converter={StaticResource StateBrush}}" />
+            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="{Binding StatusText}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="{Binding State, Converter={StaticResource StateBrush}}" />
+            <TextBlock Grid.Column="3" Text="{Binding Detail}" Style="{StaticResource Text.MutedWrap}" VerticalAlignment="Center" />
+        </Grid>
+    </DataTemplate>
 </ResourceDictionary>

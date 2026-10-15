@@ -113,11 +113,13 @@ public class CommandCatalogTests
             {
                 AllowedCommand.ChkdskScan or AllowedCommand.ChkdskSpotFix or AllowedCommand.ScheduleBootDiskCheck => CommandCatalog.Build(cmd, "C"),
                 AllowedCommand.Shutdown or AllowedCommand.Restart => CommandCatalog.Build(cmd, "30"),
-                AllowedCommand.WingetUpgrade => CommandCatalog.Build(cmd, "Mozilla.Firefox"),
+                AllowedCommand.WingetUpgrade or AllowedCommand.WingetShow or AllowedCommand.WingetInstall => CommandCatalog.Build(cmd, "Mozilla.Firefox"),
+                AllowedCommand.WingetInstallStore => CommandCatalog.Build(cmd, "9NKSQGP7F2NH"),
+                AllowedCommand.ClamAvScan or AllowedCommand.ClamAvScanQuarantine => CommandCatalog.Build(cmd, Path.GetTempPath()),
                 AllowedCommand.SetMachineStartup => CommandCatalog.Build(cmd, CommandCatalog.EncodeStartupToken(true, 1, "OneDrive")),
                 AllowedCommand.InstallWindowsUpdate => CommandCatalog.Build(cmd, Guid.NewGuid().ToString("D")),
                 AllowedCommand.AnalyzeMinidump => CommandCatalog.Build(cmd, "101026-12345-01.dmp"),
-                _ => CommandCatalog.Build(cmd),
+                _ => CommandSamples.TryGet(cmd, out var sample) ? CommandCatalog.Build(cmd, sample) : CommandCatalog.Build(cmd),
             };
             if (spec.IsInternal)
             {
@@ -126,8 +128,13 @@ public class CommandCatalogTests
                 continue;
             }
             Assert.True(Path.IsPathFullyQualified(spec.FilePath), cmd.ToString());
+            // v1.2: ClamAV liegt unter %ProgramFiles% (nur von Administratoren beschreibbar). Das Office Deployment Tool liegt im
+            // festen Setup-Ordner der App und wird nur nach Authenticode-Prüfung (Microsoft Corporation) gestartet – nie vom Helper.
             var trusted = spec.FilePath.StartsWith(system32, StringComparison.OrdinalIgnoreCase)
-                          || spec.FilePath.Equals(CommandCatalog.WingetPath, StringComparison.OrdinalIgnoreCase);
+                          || spec.FilePath.Equals(CommandCatalog.WingetPath, StringComparison.OrdinalIgnoreCase)
+                          || spec.FilePath.StartsWith(CommandCatalog.ClamAvDirectory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                          || (cmd == AllowedCommand.OfficeDeploy && spec.FilePath.Equals(CommandCatalog.OfficeSetupPath, StringComparison.OrdinalIgnoreCase))
+                          || CommandSamples.IsTrustedExtraPath(cmd, spec.FilePath);
             Assert.True(trusted, cmd.ToString());
         }
     }

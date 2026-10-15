@@ -52,6 +52,7 @@
                             <CheckBox Style="{StaticResource Switch}" Content="Komponententests" IsChecked="{Binding ComponentTests}" Margin="0,0,0,8" />
                             <CheckBox Style="{StaticResource Switch}" Content="Benchmarks" IsChecked="{Binding Benchmarks}" Margin="0,0,0,8" />
                             <CheckBox Style="{StaticResource Switch}" Content="Absturzanalyse" IsChecked="{Binding CrashAnalysis}" Margin="0,0,0,8" />
+                            <CheckBox Style="{StaticResource Switch}" Content="Bewertung &amp; Empfehlungen" IsChecked="{Binding Analysis}" Margin="0,0,0,8" />
                             <Button Style="{StaticResource Button.Link}" Content="Komponententest jetzt ausführen" Command="{Binding OpenComponentTestsCommand}" Margin="0,4,0,0" />
                         </StackPanel>
                     </ctl:ChamferBorder>

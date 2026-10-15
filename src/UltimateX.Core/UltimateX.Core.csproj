@@ -12,6 +12,8 @@
   <ItemGroup>
     <!-- Englisches Wörterbuch (§84), siehe Localization/Loc.cs -->
     <EmbeddedResource Include="Localization\en.json" LogicalName="UltimateX.Core.Localization.en.json" />
+    <!-- Spieleanforderungen für „Can my PC run it?“ (v1.2) -->
+    <EmbeddedResource Include="Analysis\games.json" LogicalName="UltimateX.Core.Analysis.games.json" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="UltimateX.Core.Tests" />

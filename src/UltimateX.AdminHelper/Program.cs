@@ -38,6 +38,9 @@ internal static class Program
         }
 
         if (!spec.RequiresElevation) return ElevatedCommandRunner.HelperExitInvalidArguments; // Helper nur für Admin-Befehle
+        // Das Office Deployment Tool liegt im Benutzerprofil und wird von der App nach Signaturprüfung direkt per UAC gestartet –
+        // der Helper führt es nie aus (keine erhöhte Ausführung von Dateien aus benutzerbeschreibbaren Ordnern, THREAT_MODEL T-30).
+        if (command is AllowedCommand.OfficeDeploy or AllowedCommand.NvidiaDriverInstall) return ElevatedCommandRunner.HelperExitInvalidArguments;
         if (!spec.IsInternal && !File.Exists(spec.FilePath)) return ElevatedCommandRunner.HelperExitCommandNotFound;
 
         if (spec.IsInteractive)

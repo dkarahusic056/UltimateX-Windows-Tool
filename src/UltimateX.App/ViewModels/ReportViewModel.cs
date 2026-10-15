@@ -38,6 +38,7 @@ public sealed partial class ReportViewModel : PageViewModel
     [ObservableProperty] private bool _componentTests = true;
     [ObservableProperty] private bool _benchmarks = true;
     [ObservableProperty] private bool _crashAnalysis = true;
+    [ObservableProperty] private bool _analysis = true;
     [ObservableProperty] private int _pageCount;
     [ObservableProperty] private bool _isRendering;
     [ObservableProperty] private string? _dataStamp;
@@ -85,12 +86,13 @@ public sealed partial class ReportViewModel : PageViewModel
     partial void OnComponentTestsChanged(bool value) => _ = RenderAsync();
     partial void OnBenchmarksChanged(bool value) => _ = RenderAsync();
     partial void OnCrashAnalysisChanged(bool value) => _ = RenderAsync();
+    partial void OnAnalysisChanged(bool value) => _ = RenderAsync();
 
     private PcReportOptions Options => new()
     {
         Hardware = Hardware, Sensors = Sensors, Network = Network, Security = Security, Drivers = Drivers,
         WindowsHealth = WindowsHealth, ComponentTests = ComponentTests, Benchmarks = Benchmarks, CrashAnalysis = CrashAnalysis,
-        PrivacyMode = PrivacyMode,
+        Analysis = Analysis, PrivacyMode = PrivacyMode,
     };
 
     protected override async Task LoadAsync()
@@ -106,6 +108,12 @@ public sealed partial class ReportViewModel : PageViewModel
         // UI-Thread: Monitor-Verlauf und Komponententest dieser Sitzung übernehmen.
         var recent = MonitorHub.Recent(MonitorHub.MaxSamples);
         var sessionRun = _nav.Page<ComponentTestViewModel>().CurrentRun;
+        ReportAnalysis? analysis = null;
+        try { analysis = await BuildAnalysisAsync(); }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            AppLog.Warn("Report", "Bewertungen nicht verfügbar", ex.Message);
+        }
 
         T? Safe<T>(Func<T?> f, string what) where T : class
         {
@@ -158,7 +166,33 @@ public sealed partial class ReportViewModel : PageViewModel
                 Benchmarks = Safe(() => AppServices.Benchmarks.History(), "Benchmarks") ?? [],
                 CrashReport = Safe(() => AppServices.Crashes.Analyze(30), "Absturzanalyse"),
                 Smart = SmartService.LoadCached()?.Disks ?? [],
+                Analysis = analysis,
             };
+        });
+    }
+
+    /// <summary>v1.2: Performance Score, Gaming Score, RAM-Test, Laufwerke, Netzwerk, Probleme und Empfehlungen.</summary>
+    private static async Task<ReportAnalysis> BuildAnalysisAsync()
+    {
+        var facts = await FactsCollector.CollectAsync(includeProcesses: false);
+        return await Task.Run(() =>
+        {
+            var perf = Core.Analysis.PerformanceScore.Combine(facts.Facts.Scores);
+            var gaming = Core.Analysis.GamingCheck.Evaluate(facts.Facts);
+            var bottleneck = Core.Analysis.BottleneckAnalyzer.Analyze(facts.Facts);
+            var advice = Core.Analysis.UpgradeAdvisor.Advise(facts.Facts);
+            var mem = facts.History.Where(r => r.Kind == Services.Benchmark.BenchmarkService.KindMemTest).OrderByDescending(r => r.Time).FirstOrDefault();
+            var drives = AppServices.DriveHealth.GetDrives(SmartService.LoadCached())
+                .Select(d => (d.Name, d.Verdict.Label, d.Verdict.State)).ToList();
+            var problems = gaming.Findings.Concat(bottleneck.Findings)
+                .Where(f => f.Status is Core.Analysis.CheckStatus.Warning or Core.Analysis.CheckStatus.Fail)
+                .GroupBy(f => f.Area).Select(g => g.First()).ToList();
+            var recs = advice.FreeFixes.Concat(advice.Upgrades.Select(u => $"{u.Component}: {u.Reason}")).ToList();
+            var memFailed = mem?.Metric("Fehler") is > 0;
+            return new ReportAnalysis(perf, gaming.Score, facts.Facts.Scores.Network,
+                mem is null ? null : $"{mem.Note} · {Services.Common.Format.DateTimeText(mem.Time)}",
+                mem is null ? DataState.NotAvailable : memFailed ? DataState.Problem : DataState.Ok,
+                drives, problems, recs);
         });
     }
 
@@ -203,6 +237,7 @@ public sealed partial class ReportViewModel : PageViewModel
         if (o.ComponentTests) Included.Add("Komponententests: letzter Lauf mit Status je Komponente");
         if (o.Benchmarks) Included.Add("Benchmarks: letzte Ergebnisse und Verlauf");
         if (o.CrashAnalysis) Included.Add("Absturzanalyse: Bluescreens, WHEA, Programmabstürze");
+        if (o.Analysis) Included.Add("Bewertung: Performance Score, Gaming Score, RAM-Test, Laufwerke, Netzwerk, Probleme, Empfehlungen");
         Included.Add(o.PrivacyMode
             ? "Datenschutzmodus AN: Benutzer- und Computername, Seriennummern, IP-/MAC-Adressen, Gateway/DNS maskiert; keine öffentliche IP."
             : "Datenschutzmodus AUS: vollständige Gerätedaten enthalten – nur an vertrauenswürdige Personen weitergeben.");
@@ -233,6 +268,38 @@ public sealed partial class ReportViewModel : PageViewModel
         {
             StatusMessage = "PDF konnte nicht gespeichert werden: " + ex.Message;
         }
+    }
+
+    /// <summary>Erstellt den Bericht neu und speichert ihn ohne Dialog als PDF (für das One-Click-Setup). Liefert den Pfad oder null.</summary>
+    public async Task<string?> ExportToDocumentsAsync()
+    {
+        // Läuft gerade ein Laden der Seite, darauf warten – danach immer frisch erheben und direkt aus DIESEN Daten bauen,
+        // damit nie ein älterer Bericht gespeichert wird.
+        for (var i = 0; IsBusy && i < 240; i++) await Task.Delay(500);
+        if (IsBusy) return null;
+        AppServices.LastHardware = null;
+        PcReportData data;
+        IsBusy = true;
+        try
+        {
+            data = await CollectAsync();
+            _data = data;
+            DataStamp = $"Daten erhoben: {data.Created:dd.MM.yyyy HH:mm:ss} · Bericht-ID {data.ReportId}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+        var options = Options;
+        var doc = await Task.Run(() => PcReportBuilder.Build(data, options));
+        _ = RenderAsync(); // Vorschau aktualisieren (unabhängig vom Export)
+        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ULTIMATE X");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, $"UltimateX-PC-Bericht-{DateTime.Now:yyyyMMdd-HHmm}.pdf");
+        var bytes = await Task.Run(() => PdfWriter.Write(doc));
+        await File.WriteAllBytesAsync(path, bytes);
+        AppLog.Info("Report", "PC-Bericht automatisch gespeichert", $"{doc.Pages.Count} Seiten");
+        return path;
     }
 
     [RelayCommand]

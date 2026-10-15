@@ -12,7 +12,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Version = "1.1.0",
+    [string]$Version = "1.0.0",
     [string]$Configuration = "Release",
     [string]$CertThumbprint = "",
     [string]$TimestampUrl = "http://timestamp.digicert.com",
@@ -105,7 +105,10 @@ if ($CertThumbprint) {
 }
 
 Step "MSI bauen (WiX)"
-dotnet build $installer -c $Configuration -p:PublishDir=$publish -p:ProductVersion=$Version -o (Join-Path $artifacts "msi") | Out-Host
+# Immer komplett neu bauen: WiX erkennt Änderungen an License.rtf, Bildern usw. nicht als Eingabe und würde sonst
+# die alte MSI wiederverwenden. Alte MSI vorher entfernen, damit nie ein veralteter Stand geprüft/kopiert wird.
+Get-ChildItem (Join-Path $artifacts "msi") -Filter *.msi -ErrorAction SilentlyContinue | Remove-Item -Force
+dotnet build $installer --no-incremental -c $Configuration -p:PublishDir=$publish -p:ProductVersion=$Version -o (Join-Path $artifacts "msi") | Out-Host
 if ($LASTEXITCODE) { throw "MSI-Build fehlgeschlagen" }
 $msi = Get-ChildItem (Join-Path $artifacts "msi") -Filter *.msi | Select-Object -First 1
 # WiX legt die MSI als Hardlink auf obj\ ab – eigenständige Kopie erzeugen (Signatur/Weitergabe betrifft nur diese Datei).
@@ -143,7 +146,6 @@ if ($msiVersion -ne $Version) { throw "MSI-Prüfung: ProductVersion $msiVersion 
 if (-not $upgrade) { throw "MSI-Prüfung: UpgradeCode fehlt (Upgrades wären nicht möglich)" }
 function Require($name) { if ($fileNames -notcontains $name) { throw "MSI-Prüfung: $name fehlt" } }
 Require "UltimateX.exe"; Require "UltimateX.AdminHelper.exe"; Require "UltimateX.Core.dll"; Require "UltimateX.Services.dll"
-Require "Bedienungsanleitung.pdf"; Require "User_Manual_EN.pdf"
 Require "coreclr.dll"; Require "hostfxr.dll"; Require "PresentationFramework.dll"   # self-contained: keine separate .NET-Installation
 $dev = $fileNames | Where-Object { $_ -like "*.pdb" -or $_ -like "*Tests*.dll" -or $_ -like "xunit*" -or $_ -like "Microsoft.TestPlatform*" }
 if ($dev) { throw ("MSI-Prüfung: Entwicklungsdateien enthalten: " + ($dev -join ", ")) }
